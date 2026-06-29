@@ -338,6 +338,36 @@ export async function recordPayment(supabase, { groupId, payerId, payeeId, amoun
   return data
 }
 
+export async function fetchExpenseSharesWithMembers(supabase, expenseId) {
+  const { data: shares, error } = await supabase
+    .from('expense_shares')
+    .select('id, user_id, amount, settled')
+    .eq('expense_id', expenseId)
+  if (error) throw error
+  if (!shares?.length) return []
+
+  const userIds = shares.map((s) => s.user_id)
+  const { data: profiles, error: pErr } = await supabase
+    .from('profiles')
+    .select('id, full_name, email')
+    .in('id', userIds)
+  if (pErr) throw pErr
+
+  const profileMap = Object.fromEntries((profiles || []).map((p) => [p.id, p]))
+  return shares.map((s) => ({
+    ...s,
+    name: profileMap[s.user_id]?.full_name || profileMap[s.user_id]?.email?.split('@')[0] || 'Member',
+  }))
+}
+
+export async function setExpenseShareSettled(supabase, shareId, settled) {
+  const { error } = await supabase
+    .from('expense_shares')
+    .update({ settled })
+    .eq('id', shareId)
+  if (error) throw error
+}
+
 export async function recordFixedExpensePayment(supabase, { fixedExpenseId, userId, periodLabel, amount }) {
   const { data, error } = await supabase
     .from('fixed_expense_payments')
