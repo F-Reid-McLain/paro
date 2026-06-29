@@ -227,7 +227,7 @@ export default function Dashboard({ user, supabase }) {
       )}
 
       <AddExpenseModal open={openAdd} onClose={() => setOpenAdd(false)} supabase={supabase} user={user} currentGroup={currentGroup} onCreated={() => loadDashboardData(currentGroup?.id)} />
-      <FloatingButton onClick={() => setOpenAdd(true)} />
+      {!openAdd && <FloatingButton onClick={() => setOpenAdd(true)} />}
     </div>
   )
 }
