@@ -33,7 +33,12 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
 
   const THEMES = [
     { id: 'midnight', name: 'Midnight', bg: '#020617', accent: '#0ea5e9' },
+    { id: 'ocean',    name: 'Ocean',    bg: '#020c1b', accent: '#06b6d4' },
+    { id: 'nord',     name: 'Nord',     bg: '#1a1f2e', accent: '#88c0d0' },
     { id: 'forest',   name: 'Forest',   bg: '#0b0a05', accent: '#22c55e' },
+    { id: 'amber',    name: 'Amber',    bg: '#0e0a04', accent: '#f59e0b' },
+    { id: 'dusk',     name: 'Dusk',     bg: '#0d0814', accent: '#f97316' },
+    { id: 'rose',     name: 'Rose',     bg: '#110a0e', accent: '#f43f5e' },
     { id: 'ash',      name: 'Ash',      bg: '#111111', accent: '#6b7280' },
     { id: 'blackout', name: 'Blackout', bg: '#000000', accent: '#22c55e' },
   ]
@@ -199,7 +204,7 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
       {/* Appearance */}
       <div className="border-2 border-def bg-card p-5 space-y-4">
         <h3 className="font-pixel text-[10px] font-semibold uppercase tracking-wider text-dim">Appearance</h3>
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           {THEMES.map((t) => {
             const active = activeTheme === t.id
             return (
