@@ -125,11 +125,11 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose}></div>
-      <div className="relative w-full max-w-lg rounded-xl bg-slate-900 p-6">
-        <div className="mb-4 flex items-center gap-2 rounded-2xl border border-white/10 bg-slate-800 p-2">
+      <div className="relative w-full max-w-lg bg-slate-900 p-6">
+        <div className="mb-4 flex items-center gap-2 border border-white/10 bg-slate-800 p-2">
           <button
             type="button"
-            className={`flex-1 rounded-xl px-3 py-2 text-sm font-medium transition ${mode === 'expense' ? 'bg-sky-500 text-white' : 'text-slate-300'}`}
+            className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${mode === 'expense' ? 'bg-sky-500 text-white' : 'text-slate-300'}`}
             onClick={() => setMode('expense')}
           >
             Expense
@@ -148,7 +148,7 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
 
         <form className="mt-4 space-y-3" onSubmit={(e) => { e.preventDefault(); handleSave() }}>
           {groups.length ? (
-            <select className="w-full rounded bg-slate-800 px-3 py-2 text-slate-100" value={groupId} onChange={(e) => setGroupId(e.target.value)}>
+            <select className="w-full rounded-none bg-slate-800 px-3 py-2 text-slate-100" value={groupId} onChange={(e) => setGroupId(e.target.value)}>
               {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
             </select>
           ) : (
@@ -158,7 +158,7 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
           {mode === 'fixed' ? (
             <>
               <input
-                className="w-full rounded bg-slate-800 px-3 py-2 text-slate-100"
+                className="w-full rounded-none bg-slate-800 px-3 py-2 text-slate-100"
                 placeholder="Fixed expense name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -168,12 +168,12 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
                   inputMode="decimal"
                   type="number"
                   step="0.01"
-                  className="w-full rounded bg-slate-800 px-3 py-2 text-slate-100"
+                  className="w-full rounded-none bg-slate-800 px-3 py-2 text-slate-100"
                   placeholder="Amount"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                 />
-                <select className="w-full rounded bg-slate-800 px-3 py-2 text-slate-100" value={period} onChange={(e) => setPeriod(e.target.value)}>
+                <select className="w-full rounded-none bg-slate-800 px-3 py-2 text-slate-100" value={period} onChange={(e) => setPeriod(e.target.value)}>
                   <option value="monthly">Monthly</option>
                   <option value="weekly">Weekly</option>
                   <option value="yearly">Yearly</option>
@@ -181,8 +181,8 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
                 </select>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
-                <input type="date" className="w-full rounded bg-slate-800 px-3 py-2 text-slate-100" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                <input type="date" className="w-full rounded bg-slate-800 px-3 py-2 text-slate-100" value={endDate} onChange={(e) => setEndDate(e.target.value)} placeholder="End date (optional)" />
+                <input type="date" className="w-full rounded-none bg-slate-800 px-3 py-2 text-slate-100" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                <input type="date" className="w-full rounded-none bg-slate-800 px-3 py-2 text-slate-100" value={endDate} onChange={(e) => setEndDate(e.target.value)} placeholder="End date (optional)" />
               </div>
               <label className="flex items-center gap-2 text-sm text-slate-300">
                 <input type="checkbox" checked={isSplit} onChange={(e) => setIsSplit(e.target.checked)} />
@@ -191,9 +191,9 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
             </>
           ) : (
             <>
-              <input inputMode="decimal" type="number" step="0.01" className="w-full rounded bg-slate-800 px-3 py-2 text-slate-100" placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
-              <input type="date" className="w-full rounded bg-slate-800 px-3 py-2 text-slate-100" value={expenseDate} onChange={(e) => setExpenseDate(e.target.value)} />
-              <select className="w-full rounded bg-slate-800 px-3 py-2 text-slate-100" value={category} onChange={(e) => setCategory(e.target.value)}>
+              <input inputMode="decimal" type="number" step="0.01" className="w-full rounded-none bg-slate-800 px-3 py-2 text-slate-100" placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
+              <input type="date" className="w-full rounded-none bg-slate-800 px-3 py-2 text-slate-100" value={expenseDate} onChange={(e) => setExpenseDate(e.target.value)} />
+              <select className="w-full rounded-none bg-slate-800 px-3 py-2 text-slate-100" value={category} onChange={(e) => setCategory(e.target.value)}>
                 <option value="">Select a category</option>
                 <option value="Food">Food</option>
                 <option value="Housing">Housing</option>
@@ -203,13 +203,13 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
                 <option value="Shopping">Shopping</option>
                 <option value="Other">Other</option>
               </select>
-              <input className="w-full rounded bg-slate-800 px-3 py-2 text-slate-100" placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+              <input className="w-full rounded-none bg-slate-800 px-3 py-2 text-slate-100" placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
               <label className="flex items-center gap-2 text-sm text-slate-300">
                 <input type="checkbox" checked={isSplit} onChange={(e) => setIsSplit(e.target.checked)} />
                 Split cost
               </label>
               {isSplit && availableMembers.length > 0 && (
-                <div className="rounded-xl border border-white/10 bg-slate-900/60 p-3 space-y-2">
+                <div className="border border-white/10 bg-slate-900/60 p-3 space-y-2">
                   <p className="text-xs text-slate-400">Split with (you + selected):</p>
                   {availableMembers.map((m) => (
                     <label key={m.id} className="flex items-center gap-2 text-sm text-slate-200">
@@ -237,8 +237,8 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
           )}
 
           <div className="flex gap-2">
-            <button type="submit" disabled={saving} className="ml-auto rounded bg-sky-500 px-4 py-2 text-white">{saving ? 'Saving…' : 'Save'}</button>
-            <button type="button" className="rounded border border-white/6 px-4 py-2 text-slate-200" onClick={onClose}>Cancel</button>
+            <button type="submit" disabled={saving} className="ml-auto rounded-lg bg-sky-500 px-4 py-2 text-white">{saving ? 'Saving…' : 'Save'}</button>
+            <button type="button" className="rounded-lg border border-white/6 px-4 py-2 text-slate-200" onClick={onClose}>Cancel</button>
           </div>
         </form>
         {!groups.length && (
@@ -259,7 +259,7 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
               } finally {
                 setCreatingGroup(false)
               }
-            }} className="rounded bg-emerald-500 px-3 py-2 text-white">Create group</button>
+            }} className="rounded-lg bg-emerald-500 px-3 py-2 text-white">Create group</button>
           </div>
         )}
       </div>

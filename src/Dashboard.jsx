@@ -121,7 +121,7 @@ export default function Dashboard({ user, supabase }) {
               <>
                 <h1 className="shrink-0 text-lg font-semibold">Paro</h1>
                 {currentGroup ? (
-                  <span className="truncate rounded-md bg-slate-800/70 px-2 py-1 text-xs text-slate-300 max-w-[130px] sm:max-w-xs">
+                  <span className="truncate bg-slate-800/70 px-2 py-1 text-xs text-slate-300 max-w-[130px] sm:max-w-xs">
                     {currentGroup.name}
                   </span>
                 ) : null}
@@ -133,8 +133,8 @@ export default function Dashboard({ user, supabase }) {
           <div className="flex items-center gap-1">
             {!inSettings && (
               <nav className="hidden sm:flex items-center gap-1 mr-2">
-                <button onClick={() => setTab('monthly')} className={`rounded px-3 py-1.5 text-sm font-medium transition ${tab === 'monthly' ? 'bg-sky-500 text-white' : 'text-slate-300 hover:text-white'}`}>Ledger</button>
-                <button onClick={() => setTab('balances')} className={`rounded px-3 py-1.5 text-sm font-medium transition ${tab === 'balances' ? 'bg-sky-500 text-white' : 'text-slate-300 hover:text-white'}`}>Balances</button>
+                <button onClick={() => setTab('monthly')} className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${tab === 'monthly' ? 'bg-sky-500 text-white' : 'text-slate-300 hover:text-white'}`}>Ledger</button>
+                <button onClick={() => setTab('balances')} className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${tab === 'balances' ? 'bg-sky-500 text-white' : 'text-slate-300 hover:text-white'}`}>Balances</button>
                 <span className="ml-2 max-w-[180px] truncate text-xs text-slate-400">{user.email}</span>
               </nav>
             )}
@@ -152,21 +152,21 @@ export default function Dashboard({ user, supabase }) {
       <main className="mx-auto max-w-6xl px-4 py-5 pb-24 sm:px-6 sm:py-6 sm:pb-10">
         {tab === 'monthly' ? (
           <div className="mb-6 space-y-4">
-            <div className="rounded-2xl border border-white/10 bg-slate-800/70 p-4 shadow-lg shadow-slate-950/30">
+            <div className="border border-white/10 bg-slate-800/70 p-4 shadow-lg shadow-slate-950/30">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
                   <p className="text-sm font-medium text-sky-300">At a glance</p>
                   <h2 className="text-lg font-semibold text-white">{currentGroup?.name || 'Choose a group to begin'}</h2>
                   <p className="text-sm text-slate-400">{totalTracked} entries tracked • {fixedCount} fixed • {variableCount} variable</p>
                 </div>
-                <div className="rounded-xl border border-white/10 bg-slate-900/70 px-4 py-3 text-right">
+                <div className="border border-white/10 bg-slate-900/70 px-4 py-3 text-right">
                   <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Current total</p>
                   <p className="text-xl font-semibold text-white">${(totalAmount / 100).toFixed(2)}</p>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-slate-800/70 p-4 shadow-lg shadow-slate-950/20">
+            <div className="border border-white/10 bg-slate-800/70 p-4 shadow-lg shadow-slate-950/20">
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-white">Recent activity</h3>
                 <span className="text-xs text-slate-400">Latest updates</span>
@@ -174,7 +174,7 @@ export default function Dashboard({ user, supabase }) {
               {recentActivity.length ? (
                 <ul className="space-y-2">
                   {recentActivity.map((entry) => (
-                    <li key={entry.id} className="flex items-center justify-between rounded-xl border border-white/10 bg-slate-900/60 px-3 py-2">
+                    <li key={entry.id} className="flex items-center justify-between border border-white/10 bg-slate-900/60 px-3 py-2">
                       <div>
                         <p className="text-sm font-medium text-slate-100">{entry.description || 'Expense'}</p>
                         <p className="text-xs text-slate-400">{entry.is_fixed ? 'Fixed' : 'Variable'} • {entry.category || 'Other'}</p>
