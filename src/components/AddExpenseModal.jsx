@@ -23,10 +23,11 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
     let mounted = true
     async function loadGroups() {
       try {
-        const { data } = await supabase.from('groups').select('*')
+        const { data } = await supabase.from('group_members').select('group_id, groups(*)')
         if (!mounted) return
-        setGroups(data || [])
-        if (data && data.length) setGroupId(data[0].id)
+        const rows = (data || []).map((row) => row.groups).filter(Boolean)
+        setGroups(rows)
+        if (rows.length && !currentGroup) setGroupId(rows[0].id)
       } catch (e) {
         console.error('load groups', e)
       }

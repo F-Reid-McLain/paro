@@ -3,7 +3,7 @@ import MonthlyLedger from './components/MonthlyLedger'
 import Settings from './components/Settings'
 import AddExpenseModal from './components/AddExpenseModal'
 import FloatingButton from './components/FloatingButton'
-import { fetchExpenses } from './lib/api'
+import { fetchExpenses, getUserGroups } from './lib/api'
 
 export default function Dashboard({ user, supabase }) {
   const [tab, setTab] = useState('monthly')
@@ -58,7 +58,20 @@ export default function Dashboard({ user, supabase }) {
     }
   }
 
-  useEffect(() => { loadDashboardData() }, [])
+  useEffect(() => {
+    async function init() {
+      try {
+        const groups = await getUserGroups(supabase)
+        if (groups.length) {
+          setCurrentGroup(groups[0])
+          loadDashboardData(groups[0].id)
+        }
+      } catch (e) {
+        console.error('init groups', e)
+      }
+    }
+    init()
+  }, [])
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100">
@@ -137,7 +150,7 @@ export default function Dashboard({ user, supabase }) {
         )}
       </main>
 
-      <AddExpenseModal open={openAdd} onClose={() => setOpenAdd(false)} supabase={supabase} user={user} currentGroup={currentGroup} onCreated={() => loadDashboardData(currentGroup?.id)} />
+      <AddExpenseModal open={openAdd} onClose={() => setOpenAdd(false)} supabase={supabase} user={user} currentGroup={currentGroup} onCreated={(created) => loadDashboardData(currentGroup?.id || created?.group_id)} />
       <FloatingButton onClick={() => setOpenAdd(true)} />
     </div>
   )
