@@ -41,7 +41,7 @@ export default function Groups({ supabase, user, currentGroup, onGroupChange }) 
     if (currentGroup) return alert('Leave your current group before creating or joining another one.')
     if (!joinSlug) return alert('Enter group slug to join')
     try {
-      const g = await joinGroup(supabase, { slug: joinSlug, user_id: user.id })
+      const g = await joinGroup(supabase, { slug: joinSlug })
       setJoinSlug('')
       setGroups((s) => [g, ...s])
       onGroupChange && onGroupChange(g)

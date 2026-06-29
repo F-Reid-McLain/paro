@@ -148,14 +148,10 @@ export async function createGroup(supabase, { name, slug, owner_id }) {
   throw lastErr || new Error('Failed to create group')
 }
 
-export async function joinGroup(supabase, { slug, user_id }) {
-  const { data: groups, error: gErr } = await supabase.from('groups').select('*').eq('slug', slug).limit(1)
-  if (gErr) throw gErr
-  if (!groups || groups.length === 0) throw new Error('Group not found')
-  const group = groups[0]
-  const { data, error } = await supabase.from('group_members').insert({ group_id: group.id, user_id, role: 'member' }).select().single()
+export async function joinGroup(supabase, { slug }) {
+  const { data, error } = await supabase.rpc('join_group_by_slug', { p_slug: slug })
   if (error) throw error
-  return group
+  return typeof data === 'string' ? JSON.parse(data) : data
 }
 
 export async function deleteExpense(supabase, expenseId) {

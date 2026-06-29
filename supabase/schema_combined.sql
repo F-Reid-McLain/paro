@@ -39,7 +39,13 @@ alter table public.groups enable row level security;
 
 drop policy if exists "Users can view their groups" on public.groups;
 create policy "Users can view their groups" on public.groups
-for select using (owner_id = auth.uid());
+for select using (
+  owner_id = auth.uid()
+  or exists (
+    select 1 from public.group_members gm
+    where gm.group_id = id and gm.user_id = auth.uid()
+  )
+);
 
 drop policy if exists "Users can create groups" on public.groups;
 create policy "Users can create groups" on public.groups
@@ -340,5 +346,29 @@ create trigger on_auth_user_created
 insert into public.profiles (id, email)
 select id, email from auth.users
 on conflict (id) do nothing;
+
+-- RPC: join a group by slug (SECURITY DEFINER so the lookup bypasses RLS)
+-- Without this, a non-member can't SELECT the group to find its id, so join fails.
+create or replace function public.join_group_by_slug(p_slug text)
+returns json
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_group public.groups%rowtype;
+begin
+  select * into v_group from public.groups where slug = p_slug limit 1;
+  if not found then
+    raise exception 'Group not found';
+  end if;
+
+  insert into public.group_members (group_id, user_id, role)
+  values (v_group.id, auth.uid(), 'member')
+  on conflict (group_id, user_id) do nothing;
+
+  return row_to_json(v_group);
+end;
+$$;
 
 -- End combined schema
