@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import Groups from './Groups'
+import { leaveGroup, deleteGroup } from '../lib/api'
 
 export default function Settings({ supabase, user, currentGroup, onGroupChange }) {
   const [groups, setGroups] = useState([])
   const [loading, setLoading] = useState(false)
   const [updates, setUpdates] = useState({})
+  const [acting, setActing] = useState(null)
 
   async function loadGroups() {
     setLoading(true)
@@ -23,6 +25,34 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
     if (!supabase) return
     loadGroups()
   }, [supabase])
+
+  async function handleLeave(group) {
+    if (!window.confirm(`Leave "${group.name}"? You can rejoin with the group slug.`)) return
+    setActing(group.id)
+    try {
+      await leaveGroup(supabase, { groupId: group.id, userId: user.id })
+      setGroups((g) => g.filter((x) => x.id !== group.id))
+      if (currentGroup?.id === group.id) onGroupChange && onGroupChange(null)
+    } catch (e) {
+      alert(e.message || 'Failed to leave group')
+    } finally {
+      setActing(null)
+    }
+  }
+
+  async function handleDelete(group) {
+    if (!window.confirm(`Delete "${group.name}"? This will permanently remove all expenses and shares. This cannot be undone.`)) return
+    setActing(group.id)
+    try {
+      await deleteGroup(supabase, group.id)
+      setGroups((g) => g.filter((x) => x.id !== group.id))
+      if (currentGroup?.id === group.id) onGroupChange && onGroupChange(null)
+    } catch (e) {
+      alert(e.message || 'Failed to delete group')
+    } finally {
+      setActing(null)
+    }
+  }
 
   async function saveGroupName(groupId) {
     const nextName = updates[groupId]
@@ -97,6 +127,25 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
                         </button>
                       ) : (
                         <span className="rounded-full bg-emerald-500/20 px-3 py-2 text-xs font-medium text-emerald-200">Active group</span>
+                      )}
+                      {isOwner ? (
+                        <button
+                          type="button"
+                          disabled={acting === group.id}
+                          onClick={() => handleDelete(group)}
+                          className="rounded border border-red-500/40 px-3 py-2 text-sm font-medium text-red-400 disabled:opacity-50"
+                        >
+                          {acting === group.id ? 'Deleting…' : 'Delete'}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={acting === group.id}
+                          onClick={() => handleLeave(group)}
+                          className="rounded border border-white/10 px-3 py-2 text-sm font-medium text-slate-400 disabled:opacity-50"
+                        >
+                          {acting === group.id ? 'Leaving…' : 'Leave'}
+                        </button>
                       )}
                     </div>
                   </div>

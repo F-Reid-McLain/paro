@@ -152,6 +152,23 @@ export async function joinGroup(supabase, { slug, user_id }) {
   return group
 }
 
+export async function leaveGroup(supabase, { groupId, userId }) {
+  const { error } = await supabase
+    .from('group_members')
+    .delete()
+    .eq('group_id', groupId)
+    .eq('user_id', userId)
+  if (error) throw error
+}
+
+export async function deleteGroup(supabase, groupId) {
+  const { error } = await supabase
+    .from('groups')
+    .delete()
+    .eq('id', groupId)
+  if (error) throw error
+}
+
 export async function getMemberProfiles(supabase, groupId) {
   const { data: memberRows, error: mErr } = await supabase
     .from('group_members')

@@ -215,16 +215,27 @@ for insert with check (
 -- ===== STAGE 3: profile visibility, payer settle rights, auto-create profile =====
 
 -- Allow group members to see each other's profiles (needed for name display)
+-- Use profiles.id to avoid ambiguity with group_members.id in the subquery join
 drop policy if exists "Group members can view each other's profiles" on public.profiles;
 create policy "Group members can view each other's profiles" on public.profiles
 for select using (
-  auth.uid() = id or
+  auth.uid() = profiles.id or
   exists (
     select 1 from public.group_members gm1
     join public.group_members gm2 on gm1.group_id = gm2.group_id
-    where gm1.user_id = auth.uid() and gm2.user_id = id
+    where gm1.user_id = auth.uid() and gm2.user_id = profiles.id
   )
 );
+
+-- Allow members to remove themselves from a group (leave)
+drop policy if exists "Members can leave groups" on public.group_members;
+create policy "Members can leave groups" on public.group_members
+for delete using (auth.uid() = user_id);
+
+-- Allow group owners to delete their group (cascades to members, expenses, shares)
+drop policy if exists "Owners can delete groups" on public.groups;
+create policy "Owners can delete groups" on public.groups
+for delete using (owner_id = auth.uid());
 
 -- Allow expense payers to mark shares on their own expenses as settled
 -- (so "settle up" works bidirectionally without requiring both parties to act)
