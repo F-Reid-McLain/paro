@@ -4,7 +4,7 @@ import Balances from './components/Balances'
 import Settings from './components/Settings'
 import AddExpenseModal from './components/AddExpenseModal'
 import FloatingButton from './components/FloatingButton'
-import { fetchExpenses, getUserGroups, getMemberProfiles, deleteExpense, deleteFixedExpense } from './lib/api'
+import { fetchExpenses, getUserGroups, getMemberProfiles, deleteExpense, deleteFixedExpense, fetchSplitFixedExpenses } from './lib/api'
 
 function GearIcon() {
   return (
@@ -22,6 +22,8 @@ export default function Dashboard({ user, supabase }) {
   const [loading, setLoading] = useState(false)
   const [currentGroup, setCurrentGroup] = useState(null)
   const [members, setMembers] = useState({})
+  const [selectedMonth, setSelectedMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1))
+  const [splitFixed, setSplitFixed] = useState([])
 
   const totalTracked = expenses.length + fixedExpenses.length
   const totalAmount = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0) + fixedExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
@@ -31,17 +33,26 @@ export default function Dashboard({ user, supabase }) {
     .sort((a, b) => new Date(b.date || b.created_at || 0) - new Date(a.date || a.created_at || 0))
     .slice(0, 4)
 
-  async function loadDashboardData(groupId = currentGroup?.id) {
+  async function loadDashboardData(groupId = currentGroup?.id, month = selectedMonth) {
     setLoading(true)
     try {
-      if (!groupId) { setExpenses([]); setFixedExpenses([]); return }
+      if (!groupId) { setExpenses([]); setFixedExpenses([]); setSplitFixed([]); return }
 
-      const rows = await fetchExpenses(supabase, { group_id: groupId })
-      const { data: fixedRows, error: fixedError } = await supabase
-        .from('fixed_expenses').select('*').eq('group_id', groupId).order('created_at', { ascending: false })
-      if (fixedError) throw fixedError
+      const y = month.getFullYear()
+      const m = month.getMonth()
+      const fromDate = `${y}-${String(m + 1).padStart(2, '0')}-01`
+      const toDate = `${y}-${String(m + 1).padStart(2, '0')}-${String(new Date(y, m + 1, 0).getDate()).padStart(2, '0')}`
+      const periodLabel = month.toLocaleString('default', { month: 'long', year: 'numeric' })
 
-      const normalizedFixed = (fixedRows || []).map((item) => ({
+      const [rows, fixedResult, splitFixedData] = await Promise.all([
+        fetchExpenses(supabase, { group_id: groupId, fromDate, toDate }),
+        supabase.from('fixed_expenses').select('*').eq('group_id', groupId).order('created_at', { ascending: false }),
+        fetchSplitFixedExpenses(supabase, { groupId, userId: user.id, periodLabel }),
+      ])
+
+      if (fixedResult.error) throw fixedResult.error
+
+      const normalizedFixed = (fixedResult.data || []).map((item) => ({
         id: item.id, description: item.name, amount: item.amount,
         date: item.start_date || item.created_at,
         is_fixed: true, is_split: item.is_split || false, period: item.period,
@@ -50,6 +61,7 @@ export default function Dashboard({ user, supabase }) {
 
       setExpenses(rows)
       setFixedExpenses(normalizedFixed)
+      setSplitFixed(splitFixedData)
     } catch (e) {
       console.error('fetch dashboard data', e)
     } finally {
@@ -191,7 +203,15 @@ export default function Dashboard({ user, supabase }) {
         ) : tab === 'balances' ? (
           <Balances supabase={supabase} user={user} currentGroup={currentGroup} members={members} onRefresh={() => loadDashboardData(currentGroup?.id)} />
         ) : (
-          <MonthlyLedger supabase={supabase} user={user} expenses={[...expenses, ...fixedExpenses]} loading={loading} members={members} onRefresh={() => loadDashboardData(currentGroup?.id)} onDelete={handleDelete} />
+          <MonthlyLedger
+            supabase={supabase} user={user} expenses={[...expenses, ...fixedExpenses]}
+            loading={loading} members={members}
+            onRefresh={() => loadDashboardData(currentGroup?.id)}
+            onDelete={handleDelete}
+            splitFixed={splitFixed}
+            selectedMonth={selectedMonth}
+            onMonthChange={(month) => { setSelectedMonth(month); loadDashboardData(currentGroup?.id, month) }}
+          />
         )}
       </main>
 

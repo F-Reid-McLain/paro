@@ -1,32 +1,45 @@
 import { useEffect, useRef, useState } from 'react'
-import { fetchUserExpenseShares, fetchExpenseSharesWithMembers, setExpenseShareSettled } from '../lib/api'
+import { fetchExpenseSharesWithMembers, setExpenseShareSettled } from '../lib/api'
 
-export default function MonthlyLedger({ expenses = [], loading = false, supabase, user, onRefresh, onDelete, members = {} }) {
+function ChevronDown() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+      <path fillRule="evenodd" d="M4.22 6.22a.75.75 0 011.06 0L8 8.94l2.72-2.72a.75.75 0 111.06 1.06l-3.25 3.25a.75.75 0 01-1.06 0L4.22 7.28a.75.75 0 010-1.06z" clipRule="evenodd" />
+    </svg>
+  )
+}
+
+function ChevronRight() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+      <path fillRule="evenodd" d="M6.22 4.22a.75.75 0 011.06 0l3.25 3.25a.75.75 0 010 1.06l-3.25 3.25a.75.75 0 01-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 010-1.06z" clipRule="evenodd" />
+    </svg>
+  )
+}
+
+export default function MonthlyLedger({
+  expenses = [], loading = false, supabase, user, onRefresh, onDelete, members = {},
+  splitFixed = [], selectedMonth, onMonthChange,
+}) {
   const [userShares, setUserShares] = useState([])
   const [openMenuId, setOpenMenuId] = useState(null)
   const [menuSharesCache, setMenuSharesCache] = useState({})
   const [loadingMenuShares, setLoadingMenuShares] = useState(false)
   const [togglingShare, setTogglingShare] = useState(null)
+  const [collapsed, setCollapsed] = useState(new Set())
   const menuRef = useRef(null)
 
   useEffect(() => {
     let mounted = true
     async function loadUserShares() {
-      if (!supabase || !user?.id || !expenses.length) {
-        if (mounted) setUserShares([])
-        return
-      }
+      if (!supabase || !user?.id || !expenses.length) { if (mounted) setUserShares([]); return }
       try {
-        const expenseIds = expenses.map((expense) => expense.id)
         const { data, error } = await supabase
-          .from('expense_shares')
-          .select('*')
-          .in('expense_id', expenseIds)
+          .from('expense_shares').select('*')
+          .in('expense_id', expenses.map((e) => e.id))
           .eq('user_id', user.id)
         if (mounted) setUserShares(error ? [] : data || [])
-      } catch (e) {
-        console.error('load user shares', e)
-      }
+      } catch (e) { console.error('load user shares', e) }
     }
     loadUserShares()
     return () => { mounted = false }
@@ -36,13 +49,21 @@ export default function MonthlyLedger({ expenses = [], loading = false, supabase
   useEffect(() => {
     if (!openMenuId) return
     function handleClick(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setOpenMenuId(null)
-      }
+      if (menuRef.current && !menuRef.current.contains(e.target)) setOpenMenuId(null)
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [openMenuId])
+
+  // Collapse all categories when expenses change (new month / new data)
+  useEffect(() => {
+    const keys = new Set()
+    expenses.forEach((e) => {
+      const kind = e.is_fixed ? 'Fixed' : 'Variable'
+      keys.add(`${kind}-${e.category || 'Other'}`)
+    })
+    setCollapsed(keys)
+  }, [expenses])
 
   async function openMenu(expense) {
     const id = expense.id
@@ -53,11 +74,8 @@ export default function MonthlyLedger({ expenses = [], loading = false, supabase
       try {
         const shares = await fetchExpenseSharesWithMembers(supabase, id)
         setMenuSharesCache((prev) => ({ ...prev, [id]: shares }))
-      } catch (e) {
-        console.error('load expense shares', e)
-      } finally {
-        setLoadingMenuShares(false)
-      }
+      } catch (e) { console.error('load expense shares', e) }
+      finally { setLoadingMenuShares(false) }
     }
   }
 
@@ -68,12 +86,8 @@ export default function MonthlyLedger({ expenses = [], loading = false, supabase
       const shares = await fetchExpenseSharesWithMembers(supabase, expenseId)
       setMenuSharesCache((prev) => ({ ...prev, [expenseId]: shares }))
       onRefresh && onRefresh()
-    } catch (e) {
-      console.error('toggle share', e)
-      alert(e.message || 'Failed to update')
-    } finally {
-      setTogglingShare(null)
-    }
+    } catch (e) { console.error('toggle share', e); alert(e.message || 'Failed to update') }
+    finally { setTogglingShare(null) }
   }
 
   async function handleDelete(expense) {
@@ -81,6 +95,39 @@ export default function MonthlyLedger({ expenses = [], loading = false, supabase
     setOpenMenuId(null)
     onDelete && onDelete(expense.id, expense.is_fixed)
   }
+
+  function toggleCategory(key) {
+    setCollapsed((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
+  // Month navigation
+  const now = new Date()
+  const isCurrentMonth = selectedMonth
+    ? selectedMonth.getFullYear() === now.getFullYear() && selectedMonth.getMonth() === now.getMonth()
+    : true
+  const formattedMonth = selectedMonth
+    ? selectedMonth.toLocaleString('default', { month: 'long', year: 'numeric' })
+    : ''
+
+  function prevMonth() {
+    const d = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() - 1, 1)
+    onMonthChange && onMonthChange(d)
+  }
+  function nextMonth() {
+    const d = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 1)
+    onMonthChange && onMonthChange(d)
+  }
+
+  // Fixed-bill progress
+  const splitCount = splitFixed.length
+  const paidCount = splitFixed.filter((fe) => fe.paidThisPeriod).length
+  const progressPct = splitCount > 0 ? Math.round((paidCount / splitCount) * 100) : 0
+  const allPaid = splitCount > 0 && paidCount === splitCount
 
   const grouped = expenses.reduce((acc, entry) => {
     const kind = entry.is_fixed ? 'Fixed' : 'Variable'
@@ -91,7 +138,7 @@ export default function MonthlyLedger({ expenses = [], loading = false, supabase
     return acc
   }, {})
 
-  const overallTotal = expenses.reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0)
+  const overallTotal = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
 
   function getCategoryBadge(category = 'Other') {
     const c = String(category).toLowerCase()
@@ -110,20 +157,66 @@ export default function MonthlyLedger({ expenses = [], loading = false, supabase
 
   return (
     <section>
+      {/* Header + month selector */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-semibold text-white">Monthly Ledger</h2>
-        <div className="text-sm text-slate-300">This month</div>
+        <h2 className="text-2xl font-semibold text-white">Ledger</h2>
+        {selectedMonth && (
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={prevMonth}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path fillRule="evenodd" d="M9.78 4.22a.75.75 0 010 1.06L7.06 8l2.72 2.72a.75.75 0 11-1.06 1.06L5.47 8.53a.75.75 0 010-1.06l3.25-3.25a.75.75 0 011.06 0z" clipRule="evenodd" />
+              </svg>
+            </button>
+            <span className="min-w-[110px] text-center text-sm font-medium text-slate-200">{formattedMonth}</span>
+            <button
+              type="button"
+              onClick={nextMonth}
+              disabled={isCurrentMonth}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path fillRule="evenodd" d="M6.22 4.22a.75.75 0 011.06 0l3.25 3.25a.75.75 0 010 1.06l-3.25 3.25a.75.75 0 01-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 010-1.06z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
 
-      <p className="text-slate-300 mt-2">Track recurring bills and everyday spending in one monthly view.</p>
+      {/* Fixed-bill progress bar */}
+      {splitCount > 0 && (
+        <div className="mt-4 rounded-2xl border border-white/10 bg-slate-800/70 p-4">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-sm font-semibold text-white">Fixed bills</p>
+            <p className={`text-sm font-medium ${allPaid ? 'text-emerald-300' : 'text-slate-300'}`}>
+              {paidCount} / {splitCount} paid
+            </p>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-slate-700">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${
+                allPaid ? 'bg-emerald-500' : paidCount > 0 ? 'bg-amber-400' : 'bg-slate-500'
+              }`}
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+          {allPaid && (
+            <p className="mt-1.5 text-xs text-emerald-400">All fixed bills paid for {formattedMonth}</p>
+          )}
+        </div>
+      )}
 
-      <div className="mt-6 rounded border border-white/6 bg-slate-800 p-4 text-slate-200">
+      {/* Ledger list */}
+      <div className="mt-4 rounded border border-white/6 bg-slate-800 p-4 text-slate-200">
         {loading ? (
           <div className="text-slate-400">Loading…</div>
         ) : expenses.length === 0 ? (
           <div className="rounded-xl border border-dashed border-white/10 bg-slate-900/40 p-6 text-center text-slate-400">
             <p className="font-medium text-slate-200">Nothing here yet.</p>
-            <p className="mt-1 text-sm">Add your first expense using the + button to start building your monthly ledger.</p>
+            <p className="mt-1 text-sm">No expenses recorded for {formattedMonth}.</p>
           </div>
         ) : (
           <>
@@ -132,176 +225,183 @@ export default function MonthlyLedger({ expenses = [], loading = false, supabase
               <div className="font-medium text-white">Total ${(overallTotal / 100).toFixed(2)}</div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               {Object.entries(grouped).map(([kind, categories]) => (
-                <div key={kind} className="rounded-2xl border border-white/10 bg-slate-900/50 p-4">
-                  <div className="mb-3 flex items-center justify-between">
+                <div key={kind} className="rounded-2xl border border-white/10 bg-slate-900/50 p-3">
+                  <div className="mb-2 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-lg font-semibold text-white">{kind} Expenses</h3>
-                      <span className={`rounded-full border px-2 py-1 text-[11px] font-medium ${getKindBadge(kind)}`}>{kind}</span>
+                      <h3 className="text-base font-semibold text-white">{kind}</h3>
+                      <span className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${getKindBadge(kind)}`}>{kind}</span>
                     </div>
                     <div className="text-sm text-slate-300">
-                      ${(Object.values(categories).reduce((sum, entries) => sum + entries.reduce((s, e) => s + (Number(e.amount) || 0), 0), 0) / 100).toFixed(2)}
+                      ${(Object.values(categories).reduce((s, es) => s + es.reduce((a, e) => a + (Number(e.amount) || 0), 0), 0) / 100).toFixed(2)}
                     </div>
                   </div>
 
-                  <div className="space-y-3">
-                    {Object.entries(categories).map(([category, entries]) => (
-                      <div key={`${kind}-${category}`} className="rounded-xl border border-white/10 bg-slate-800/70 p-3">
-                        <div className="mb-2 flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className={`rounded-full border px-2 py-1 text-[11px] font-medium ${getCategoryBadge(category)}`}>{category}</span>
-                            <span className="text-xs text-slate-400">{entries.length} items</span>
-                          </div>
-                          <div className="text-sm text-slate-300">
-                            ${(entries.reduce((sum, e) => sum + (Number(e.amount) || 0), 0) / 100).toFixed(2)}
-                          </div>
-                        </div>
+                  <div className="space-y-1.5">
+                    {Object.entries(categories).map(([category, entries]) => {
+                      const key = `${kind}-${category}`
+                      const isCollapsed = collapsed.has(key)
+                      const catTotal = entries.reduce((s, e) => s + (Number(e.amount) || 0), 0)
 
-                        <ul className="space-y-2">
-                          {entries.map((e) => {
-                            const myShare = userShares.find((s) => s.expense_id === e.id)
-                            const canDelete = e.is_fixed || e.payer_id === user.id
-                            const isMenuOpen = openMenuId === e.id
-                            const shares = menuSharesCache[e.id] || []
+                      return (
+                        <div key={key} className="rounded-xl border border-white/10 bg-slate-800/70">
+                          {/* Category row — always visible, tap to expand */}
+                          <button
+                            type="button"
+                            onClick={() => toggleCategory(key)}
+                            className="flex w-full items-center justify-between px-3 py-2.5 text-left"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${getCategoryBadge(category)}`}>{category}</span>
+                              <span className="text-xs text-slate-400">{entries.length} item{entries.length !== 1 ? 's' : ''}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-slate-300">${(catTotal / 100).toFixed(2)}</span>
+                              <span className="text-slate-500">{isCollapsed ? <ChevronRight /> : <ChevronDown />}</span>
+                            </div>
+                          </button>
 
-                            return (
-                              <li key={e.id} className="relative rounded-xl border border-white/10 bg-slate-900/50 p-2.5">
-                                <div className="flex items-center gap-2">
-                                  <div className="min-w-0 flex-1">
-                                    <div className="text-sm font-medium text-white">{e.description || 'Expense'}</div>
-                                    <div className="text-xs text-slate-400">
-                                      {new Date(e.date || e.created_at).toLocaleDateString()}
-                                      {e.is_split ? ' • Split' : ''}
-                                      {e.period ? ` • ${e.period}` : ''}
-                                      {e.payer_id
-                                        ? e.payer_id === user.id
-                                          ? ' • You paid'
-                                          : ` • ${members[e.payer_id]?.name || 'Member'} paid`
-                                        : null}
+                          {/* Items — hidden when collapsed */}
+                          {!isCollapsed && (
+                            <ul className="border-t border-white/6 px-2 pb-2 pt-1 space-y-1.5">
+                              {entries.map((e) => {
+                                const myShare = userShares.find((s) => s.expense_id === e.id)
+                                const canDelete = e.is_fixed || e.payer_id === user.id
+                                const isMenuOpen = openMenuId === e.id
+                                const shares = menuSharesCache[e.id] || []
+
+                                return (
+                                  <li key={e.id} className="relative rounded-xl border border-white/10 bg-slate-900/50 p-2.5">
+                                    <div className="flex items-center gap-2">
+                                      <div className="min-w-0 flex-1">
+                                        <div className="text-sm font-medium text-white">{e.description || 'Expense'}</div>
+                                        <div className="text-xs text-slate-400">
+                                          {new Date(e.date || e.created_at).toLocaleDateString()}
+                                          {e.is_split ? ' • Split' : ''}
+                                          {e.period ? ` • ${e.period}` : ''}
+                                          {e.payer_id
+                                            ? e.payer_id === user.id ? ' • You paid' : ` • ${members[e.payer_id]?.name || 'Member'} paid`
+                                            : null}
+                                        </div>
+                                      </div>
+                                      <div className="shrink-0 text-right">
+                                        <div className="text-sm font-medium text-white">${(e.amount / 100).toFixed(2)}</div>
+                                        {myShare ? (
+                                          myShare.settled
+                                            ? <div className="text-xs text-emerald-300">Settled</div>
+                                            : <div className="text-xs text-amber-300">You owe ${(myShare.amount / 100).toFixed(2)}</div>
+                                        ) : e.is_split && e.payer_id === user.id ? (
+                                          <div className="text-xs text-slate-400">You paid</div>
+                                        ) : null}
+                                      </div>
+
+                                      {/* 3-dot menu button */}
+                                      <button
+                                        type="button"
+                                        onClick={() => openMenu(e)}
+                                        className={`shrink-0 flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-700 hover:text-white transition-colors ${isMenuOpen ? 'bg-slate-700 text-white' : ''}`}
+                                        aria-label="Options"
+                                      >
+                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                          <circle cx="3" cy="8" r="1.5" />
+                                          <circle cx="8" cy="8" r="1.5" />
+                                          <circle cx="13" cy="8" r="1.5" />
+                                        </svg>
+                                      </button>
                                     </div>
-                                  </div>
-                                  <div className="shrink-0 text-right">
-                                    <div className="text-sm font-medium text-white">${(e.amount / 100).toFixed(2)}</div>
-                                    {myShare ? (
-                                      myShare.settled
-                                        ? <div className="text-xs text-emerald-300">Settled</div>
-                                        : <div className="text-xs text-amber-300">You owe ${(myShare.amount / 100).toFixed(2)}</div>
-                                    ) : e.is_split && e.payer_id === user.id ? (
-                                      <div className="text-xs text-slate-400">You paid</div>
-                                    ) : null}
-                                  </div>
 
-                                  {/* 3-dot menu button */}
-                                  <button
-                                    type="button"
-                                    onClick={() => openMenu(e)}
-                                    className={`shrink-0 flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-700 hover:text-white transition-colors ${isMenuOpen ? 'bg-slate-700 text-white' : ''}`}
-                                    aria-label="Options"
-                                  >
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                                      <circle cx="3" cy="8" r="1.5" />
-                                      <circle cx="8" cy="8" r="1.5" />
-                                      <circle cx="13" cy="8" r="1.5" />
-                                    </svg>
-                                  </button>
-                                </div>
+                                    {/* Dropdown menu */}
+                                    {isMenuOpen && (
+                                      <div ref={menuRef} className="absolute right-0 top-full z-50 mt-1 w-64 rounded-xl border border-white/10 bg-slate-800 shadow-xl shadow-slate-950/60">
+                                        {e.is_split && (
+                                          <div className="border-b border-white/8 p-3">
+                                            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Who's paid their share</p>
+                                            {loadingMenuShares && !shares.length ? (
+                                              <p className="text-xs text-slate-400">Loading…</p>
+                                            ) : shares.length === 0 ? (
+                                              <p className="text-xs text-slate-400">No shares recorded.</p>
+                                            ) : (
+                                              <ul className="space-y-1.5">
+                                                {shares.map((share) => (
+                                                  <li key={share.id} className="flex items-center justify-between gap-2">
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                      <span className={`h-2 w-2 shrink-0 rounded-full ${share.settled ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                                                      <span className="truncate text-sm text-slate-200">{share.name}</span>
+                                                      <span className="shrink-0 text-xs text-slate-400">${(share.amount / 100).toFixed(2)}</span>
+                                                    </div>
+                                                    <button
+                                                      type="button"
+                                                      disabled={togglingShare === share.id}
+                                                      onClick={() => handleToggleShare(share.id, share.settled, e.id)}
+                                                      className={`shrink-0 rounded-md px-2 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${
+                                                        share.settled
+                                                          ? 'bg-slate-700 text-slate-300 hover:bg-amber-500/20 hover:text-amber-300'
+                                                          : 'bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600/40'
+                                                      }`}
+                                                    >
+                                                      {togglingShare === share.id ? '…' : share.settled ? 'Mark unpaid' : 'Mark paid'}
+                                                    </button>
+                                                  </li>
+                                                ))}
+                                              </ul>
+                                            )}
+                                          </div>
+                                        )}
 
-                                {/* Dropdown menu */}
-                                {isMenuOpen && (
-                                  <div
-                                    ref={menuRef}
-                                    className="absolute right-0 top-full z-50 mt-1 w-64 rounded-xl border border-white/10 bg-slate-800 shadow-xl shadow-slate-950/60"
-                                  >
-                                    {/* Share statuses for split expenses */}
-                                    {e.is_split && (
-                                      <div className="border-b border-white/8 p-3">
-                                        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Who's paid their share</p>
-                                        {loadingMenuShares && !shares.length ? (
-                                          <p className="text-xs text-slate-400">Loading…</p>
-                                        ) : shares.length === 0 ? (
-                                          <p className="text-xs text-slate-400">No shares recorded.</p>
-                                        ) : (
-                                          <ul className="space-y-1.5">
-                                            {shares.map((share) => (
-                                              <li key={share.id} className="flex items-center justify-between gap-2">
-                                                <div className="flex items-center gap-2 min-w-0">
-                                                  <span className={`h-2 w-2 shrink-0 rounded-full ${share.settled ? 'bg-emerald-400' : 'bg-amber-400'}`} />
-                                                  <span className="truncate text-sm text-slate-200">{share.name}</span>
-                                                  <span className="shrink-0 text-xs text-slate-400">${(share.amount / 100).toFixed(2)}</span>
-                                                </div>
-                                                <button
-                                                  type="button"
-                                                  disabled={togglingShare === share.id}
-                                                  onClick={() => handleToggleShare(share.id, share.settled, e.id)}
-                                                  className={`shrink-0 rounded-md px-2 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${
-                                                    share.settled
-                                                      ? 'bg-slate-700 text-slate-300 hover:bg-amber-500/20 hover:text-amber-300'
-                                                      : 'bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600/40'
-                                                  }`}
-                                                >
-                                                  {togglingShare === share.id ? '…' : share.settled ? 'Mark unpaid' : 'Mark paid'}
-                                                </button>
-                                              </li>
-                                            ))}
-                                          </ul>
+                                        {myShare && (
+                                          <div className="border-b border-white/8 p-3">
+                                            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Your share</p>
+                                            <div className="flex items-center justify-between">
+                                              <span className={`text-sm font-medium ${myShare.settled ? 'text-emerald-300' : 'text-amber-300'}`}>
+                                                {myShare.settled ? 'Settled' : `You owe $${(myShare.amount / 100).toFixed(2)}`}
+                                              </span>
+                                              <button
+                                                type="button"
+                                                disabled={togglingShare === myShare.id}
+                                                onClick={() => handleToggleShare(myShare.id, myShare.settled, e.id)}
+                                                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
+                                                  myShare.settled
+                                                    ? 'bg-slate-700 text-slate-300 hover:bg-amber-500/20 hover:text-amber-300'
+                                                    : 'bg-emerald-600 text-white hover:bg-emerald-500'
+                                                }`}
+                                              >
+                                                {togglingShare === myShare.id ? '…' : myShare.settled ? 'Mark unpaid' : 'Mark settled'}
+                                              </button>
+                                            </div>
+                                          </div>
+                                        )}
+
+                                        {canDelete && (
+                                          <div className="p-2">
+                                            <button
+                                              type="button"
+                                              onClick={() => handleDelete(e)}
+                                              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                                            >
+                                              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                                                <path d="M6 2h4a1 1 0 0 1 1 1H5a1 1 0 0 1 1-1ZM3 4h10l-1 9H4L3 4Zm3 2v5h1V6H6Zm3 0v5h1V6H9Z" />
+                                              </svg>
+                                              Delete charge
+                                            </button>
+                                          </div>
+                                        )}
+
+                                        {!e.is_split && !myShare && !canDelete && (
+                                          <div className="p-3">
+                                            <p className="text-xs text-slate-400">No actions available.</p>
+                                          </div>
                                         )}
                                       </div>
                                     )}
-
-                                    {/* My share toggle (if I'm a debtor) */}
-                                    {myShare && (
-                                      <div className="border-b border-white/8 p-3">
-                                        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Your share</p>
-                                        <div className="flex items-center justify-between">
-                                          <span className={`text-sm font-medium ${myShare.settled ? 'text-emerald-300' : 'text-amber-300'}`}>
-                                            {myShare.settled ? 'Settled' : `You owe $${(myShare.amount / 100).toFixed(2)}`}
-                                          </span>
-                                          <button
-                                            type="button"
-                                            disabled={togglingShare === myShare.id}
-                                            onClick={() => handleToggleShare(myShare.id, myShare.settled, e.id)}
-                                            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
-                                              myShare.settled
-                                                ? 'bg-slate-700 text-slate-300 hover:bg-amber-500/20 hover:text-amber-300'
-                                                : 'bg-emerald-600 text-white hover:bg-emerald-500'
-                                            }`}
-                                          >
-                                            {togglingShare === myShare.id ? '…' : myShare.settled ? 'Mark unpaid' : 'Mark settled'}
-                                          </button>
-                                        </div>
-                                      </div>
-                                    )}
-
-                                    {/* Delete */}
-                                    {canDelete && (
-                                      <div className="p-2">
-                                        <button
-                                          type="button"
-                                          onClick={() => handleDelete(e)}
-                                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
-                                        >
-                                          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                                            <path d="M6 2h4a1 1 0 0 1 1 1H5a1 1 0 0 1 1-1ZM3 4h10l-1 9H4L3 4Zm3 2v5h1V6H6Zm3 0v5h1V6H9Z" />
-                                          </svg>
-                                          Delete charge
-                                        </button>
-                                      </div>
-                                    )}
-
-                                    {!e.is_split && !myShare && !canDelete && (
-                                      <div className="p-3">
-                                        <p className="text-xs text-slate-400">No actions available for this expense.</p>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </li>
-                            )
-                          })}
-                        </ul>
-                      </div>
-                    ))}
+                                  </li>
+                                )
+                              })}
+                            </ul>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               ))}

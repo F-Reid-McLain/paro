@@ -168,7 +168,7 @@ export async function deleteFixedExpense(supabase, fixedExpenseId) {
   if (error) throw error
 }
 
-export async function fetchSplitFixedExpenses(supabase, { groupId, userId }) {
+export async function fetchSplitFixedExpenses(supabase, { groupId, userId, periodLabel }) {
   const [{ data: fixedData, error: fErr }, { data: membersData, error: mErr }] = await Promise.all([
     supabase.from('fixed_expenses').select('*').eq('group_id', groupId).eq('is_split', true),
     supabase.from('group_members').select('user_id').eq('group_id', groupId),
@@ -190,16 +190,14 @@ export async function fetchSplitFixedExpenses(supabase, { groupId, userId }) {
 
   const memberCount = Math.max((membersData || []).length, 1)
 
-  // Current period label: "June 2026"
-  const now = new Date()
-  const currentPeriodLabel = now.toLocaleString('default', { month: 'long', year: 'numeric' })
+  const label = periodLabel || new Date().toLocaleString('default', { month: 'long', year: 'numeric' })
 
   return fixedData.map((fe) => ({
     ...fe,
     myShare: Math.floor(fe.amount / memberCount),
     memberCount,
-    currentPeriodLabel,
-    paidThisPeriod: paidSet.has(`${fe.id}:${currentPeriodLabel}`),
+    currentPeriodLabel: label,
+    paidThisPeriod: paidSet.has(`${fe.id}:${label}`),
   }))
 }
 
