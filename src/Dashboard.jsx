@@ -6,6 +6,14 @@ import AddExpenseModal from './components/AddExpenseModal'
 import FloatingButton from './components/FloatingButton'
 import { fetchExpenses, getUserGroups, getMemberProfiles, deleteExpense, deleteFixedExpense } from './lib/api'
 
+function GearIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+      <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+    </svg>
+  )
+}
+
 export default function Dashboard({ user, supabase }) {
   const [tab, setTab] = useState('monthly')
   const [openAdd, setOpenAdd] = useState(false)
@@ -16,7 +24,7 @@ export default function Dashboard({ user, supabase }) {
   const [members, setMembers] = useState({})
 
   const totalTracked = expenses.length + fixedExpenses.length
-  const totalAmount = expenses.reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0) + fixedExpenses.reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0)
+  const totalAmount = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0) + fixedExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
   const fixedCount = fixedExpenses.length
   const variableCount = expenses.length
   const recentActivity = [...expenses, ...fixedExpenses]
@@ -26,31 +34,18 @@ export default function Dashboard({ user, supabase }) {
   async function loadDashboardData(groupId = currentGroup?.id) {
     setLoading(true)
     try {
-      if (!groupId) {
-        setExpenses([])
-        setFixedExpenses([])
-        return
-      }
+      if (!groupId) { setExpenses([]); setFixedExpenses([]); return }
 
       const rows = await fetchExpenses(supabase, { group_id: groupId })
       const { data: fixedRows, error: fixedError } = await supabase
-        .from('fixed_expenses')
-        .select('*')
-        .eq('group_id', groupId)
-        .order('created_at', { ascending: false })
-
+        .from('fixed_expenses').select('*').eq('group_id', groupId).order('created_at', { ascending: false })
       if (fixedError) throw fixedError
 
       const normalizedFixed = (fixedRows || []).map((item) => ({
-        id: item.id,
-        description: item.name,
-        amount: item.amount,
+        id: item.id, description: item.name, amount: item.amount,
         date: item.start_date || item.created_at,
-        is_fixed: true,
-        is_split: item.is_split || false,
-        period: item.period,
-        category: 'Fixed',
-        created_at: item.created_at,
+        is_fixed: true, is_split: item.is_split || false, period: item.period,
+        category: 'Fixed', created_at: item.created_at,
       }))
 
       setExpenses(rows)
@@ -64,11 +59,8 @@ export default function Dashboard({ user, supabase }) {
 
   async function handleDelete(id, isFixed) {
     try {
-      if (isFixed) {
-        await deleteFixedExpense(supabase, id)
-      } else {
-        await deleteExpense(supabase, id)
-      }
+      if (isFixed) await deleteFixedExpense(supabase, id)
+      else await deleteExpense(supabase, id)
       loadDashboardData(currentGroup?.id)
     } catch (e) {
       console.error('delete expense', e)
@@ -92,29 +84,56 @@ export default function Dashboard({ user, supabase }) {
     init()
   }, [])
 
+  const inSettings = tab === 'settings'
+
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100">
-      {/* Header — padded for iPhone notch/Dynamic Island */}
       <header
         className="sticky top-0 z-40 border-b border-white/6 bg-slate-950/80 backdrop-blur-md px-4 sm:px-6"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between">
+          {/* Left: back arrow (settings) or logo + group */}
           <div className="flex min-w-0 items-center gap-3">
-            <h1 className="shrink-0 text-lg font-semibold">Paro</h1>
-            {currentGroup ? (
-              <span className="truncate rounded-md bg-slate-800/70 px-2 py-1 text-xs text-slate-300 max-w-[130px] sm:max-w-xs">
-                {currentGroup.name}
-              </span>
-            ) : null}
+            {inSettings ? (
+              <button
+                onClick={() => setTab('monthly')}
+                className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                  <path fillRule="evenodd" d="M9.78 4.22a.75.75 0 010 1.06L7.06 8l2.72 2.72a.75.75 0 11-1.06 1.06L5.47 8.53a.75.75 0 010-1.06l3.25-3.25a.75.75 0 011.06 0z" clipRule="evenodd" />
+                </svg>
+                Back
+              </button>
+            ) : (
+              <>
+                <h1 className="shrink-0 text-lg font-semibold">Paro</h1>
+                {currentGroup ? (
+                  <span className="truncate rounded-md bg-slate-800/70 px-2 py-1 text-xs text-slate-300 max-w-[130px] sm:max-w-xs">
+                    {currentGroup.name}
+                  </span>
+                ) : null}
+              </>
+            )}
           </div>
-          {/* Desktop nav — hidden on mobile (bottom tab bar handles it) */}
-          <nav className="hidden sm:flex items-center gap-1">
-            <button onClick={() => setTab('monthly')} className={`rounded px-3 py-1.5 text-sm font-medium transition ${tab === 'monthly' ? 'bg-sky-500 text-white' : 'text-slate-300 hover:text-white'}`}>Ledger</button>
-            <button onClick={() => setTab('balances')} className={`rounded px-3 py-1.5 text-sm font-medium transition ${tab === 'balances' ? 'bg-sky-500 text-white' : 'text-slate-300 hover:text-white'}`}>Balances</button>
-            <button onClick={() => setTab('settings')} className={`rounded px-3 py-1.5 text-sm font-medium transition ${tab === 'settings' ? 'bg-sky-500 text-white' : 'text-slate-300 hover:text-white'}`}>Settings</button>
-            <span className="ml-3 max-w-[180px] truncate text-xs text-slate-400">{user.email}</span>
-          </nav>
+
+          {/* Right: desktop nav tabs + gear */}
+          <div className="flex items-center gap-1">
+            {!inSettings && (
+              <nav className="hidden sm:flex items-center gap-1 mr-2">
+                <button onClick={() => setTab('monthly')} className={`rounded px-3 py-1.5 text-sm font-medium transition ${tab === 'monthly' ? 'bg-sky-500 text-white' : 'text-slate-300 hover:text-white'}`}>Ledger</button>
+                <button onClick={() => setTab('balances')} className={`rounded px-3 py-1.5 text-sm font-medium transition ${tab === 'balances' ? 'bg-sky-500 text-white' : 'text-slate-300 hover:text-white'}`}>Balances</button>
+                <span className="ml-2 max-w-[180px] truncate text-xs text-slate-400">{user.email}</span>
+              </nav>
+            )}
+            <button
+              onClick={() => setTab(inSettings ? 'monthly' : 'settings')}
+              className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${inSettings ? 'bg-sky-500 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+              aria-label="Settings"
+            >
+              <GearIcon />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -146,7 +165,7 @@ export default function Dashboard({ user, supabase }) {
                     <li key={entry.id} className="flex items-center justify-between rounded-xl border border-white/10 bg-slate-900/60 px-3 py-2">
                       <div>
                         <p className="text-sm font-medium text-slate-100">{entry.description || 'Expense'}</p>
-                        <p className="text-xs text-slate-400">{entry.is_fixed ? 'Fixed expense' : 'Variable expense'} • {entry.category || 'Other'}</p>
+                        <p className="text-xs text-slate-400">{entry.is_fixed ? 'Fixed' : 'Variable'} • {entry.category || 'Other'}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-semibold text-white">${(Number(entry.amount) / 100).toFixed(2)}</p>
@@ -156,7 +175,7 @@ export default function Dashboard({ user, supabase }) {
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-slate-400">No activity yet. Add your first expense to see it here.</p>
+                <p className="text-sm text-slate-400">No activity yet. Add your first expense using the + button.</p>
               )}
             </div>
           </div>
@@ -176,17 +195,18 @@ export default function Dashboard({ user, supabase }) {
         )}
       </main>
 
-      {/* Bottom tab bar — mobile only */}
-      <nav
-        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-white/8 bg-slate-950/95 backdrop-blur-md sm:hidden"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-      >
-        <button onClick={() => setTab('monthly')} className={`flex-1 py-3 text-sm font-medium border-t-2 transition-colors ${tab === 'monthly' ? 'border-sky-500 text-sky-400' : 'border-transparent text-slate-500'}`}>Ledger</button>
-        <button onClick={() => setTab('balances')} className={`flex-1 py-3 text-sm font-medium border-t-2 transition-colors ${tab === 'balances' ? 'border-sky-500 text-sky-400' : 'border-transparent text-slate-500'}`}>Balances</button>
-        <button onClick={() => setTab('settings')} className={`flex-1 py-3 text-sm font-medium border-t-2 transition-colors ${tab === 'settings' ? 'border-sky-500 text-sky-400' : 'border-transparent text-slate-500'}`}>Settings</button>
-      </nav>
+      {/* Bottom tab bar — mobile only, 2 tabs */}
+      {!inSettings && (
+        <nav
+          className="fixed inset-x-0 bottom-0 z-40 flex border-t border-white/8 bg-slate-950/95 backdrop-blur-md sm:hidden"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        >
+          <button onClick={() => setTab('monthly')} className={`flex-1 py-3 text-sm font-medium border-t-2 transition-colors ${tab === 'monthly' ? 'border-sky-500 text-sky-400' : 'border-transparent text-slate-500'}`}>Ledger</button>
+          <button onClick={() => setTab('balances')} className={`flex-1 py-3 text-sm font-medium border-t-2 transition-colors ${tab === 'balances' ? 'border-sky-500 text-sky-400' : 'border-transparent text-slate-500'}`}>Balances</button>
+        </nav>
+      )}
 
-      <AddExpenseModal open={openAdd} onClose={() => setOpenAdd(false)} supabase={supabase} user={user} currentGroup={currentGroup} onCreated={(created) => loadDashboardData(currentGroup?.id || created?.group_id)} />
+      <AddExpenseModal open={openAdd} onClose={() => setOpenAdd(false)} supabase={supabase} user={user} currentGroup={currentGroup} onCreated={() => loadDashboardData(currentGroup?.id)} />
       <FloatingButton onClick={() => setOpenAdd(true)} />
     </div>
   )

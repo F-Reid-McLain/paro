@@ -86,15 +86,6 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
   const balanceEntries = Object.entries(balances).filter(([, amount]) => amount !== 0)
 
   const selfShares = myShares.filter((s) => s.isSelfShare)
-  const otherShares = myShares.filter((s) => !s.isSelfShare)
-
-  const sharesByPayer = otherShares.reduce((acc, item) => {
-    const payerId = item.expense?.payer_id
-    if (!payerId) return acc
-    if (!acc[payerId]) acc[payerId] = []
-    acc[payerId].push(item)
-    return acc
-  }, {})
 
   return (
     <section className="space-y-8">
@@ -220,59 +211,6 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
         </div>
       )}
 
-      {/* Shares you owe to others */}
-      {currentGroup && !loading && (
-        <div>
-          <h3 className="text-lg font-semibold text-white">Your unsettled shares</h3>
-          <p className="mt-1 text-sm text-slate-300">Expenses someone else paid that you owe a portion of.</p>
-
-          <div className="mt-4">
-            {otherShares.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-white/10 bg-slate-800/50 p-6 text-center">
-                <p className="text-sm text-slate-400">You have no unsettled shares right now.</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {Object.entries(sharesByPayer).map(([payerId, items]) => {
-                  const payerName = members[payerId]?.name || 'Group member'
-                  const subtotal = items.reduce((sum, i) => sum + i.shareAmount, 0)
-                  return (
-                    <div key={payerId} className="rounded-2xl border border-white/10 bg-slate-800/70 p-4">
-                      <div className="mb-3 flex items-center justify-between">
-                        <p className="text-sm font-semibold text-white">Paid by {payerName}</p>
-                        <p className="text-sm font-medium text-amber-300">You owe ${(subtotal / 100).toFixed(2)}</p>
-                      </div>
-                      <ul className="space-y-2">
-                        {items.map(({ shareId, shareAmount, expense }) => (
-                          <li key={shareId} className="flex items-center justify-between rounded-xl border border-white/8 bg-slate-900/60 px-3 py-2.5">
-                            <div>
-                              <p className="text-sm text-white">{expense?.description || 'Expense'}</p>
-                              <p className="text-xs text-slate-400">
-                                {expense?.date ? new Date(expense.date).toLocaleDateString() : ''}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <p className="text-sm font-medium text-white">${(shareAmount / 100).toFixed(2)}</p>
-                              <button
-                                type="button"
-                                onClick={() => handleSettleShare(shareId)}
-                                disabled={settlingShare === shareId}
-                                className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
-                              >
-                                {settlingShare === shareId ? '…' : 'Settled'}
-                              </button>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </section>
   )
 }
