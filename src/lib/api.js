@@ -307,24 +307,6 @@ export async function fetchGroupBalances(supabase, { groupId, currentUserId }) {
     }
   }
 
-  // Adjust balances for cash payments recorded in the group
-  const { data: payments, error: pmtErr } = await supabase
-    .from('payments')
-    .select('payer_id, payee_id, amount')
-    .eq('group_id', groupId)
-  if (pmtErr) throw pmtErr
-
-  for (const pmt of payments || []) {
-    const amount = Number(pmt.amount)
-    if (pmt.payer_id === currentUserId) {
-      // I paid someone — reduces what I owe them (or increases what they owe me)
-      balances[pmt.payee_id] = (balances[pmt.payee_id] || 0) + amount
-    } else if (pmt.payee_id === currentUserId) {
-      // Someone paid me — reduces what they owe me
-      balances[pmt.payer_id] = (balances[pmt.payer_id] || 0) - amount
-    }
-  }
-
   return balances
 }
 
