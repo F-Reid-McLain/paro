@@ -57,7 +57,7 @@ export async function createExpense(supabase, expense, shares = []) {
   if (normalizedExpense.occurred_at) delete normalizedExpense.occurred_at
 
   // Strip client-only fields before inserting
-  const { splitWith: splitWithIds, ...expenseToInsert } = normalizedExpense
+  const { splitWith: splitWithIds, myShareAlreadyPaid, ...expenseToInsert } = normalizedExpense
 
   const { data: expData, error: expError } = await supabase.from('expenses').insert(expenseToInsert).select().single()
   if (expError) throw expError
@@ -77,17 +77,15 @@ export async function createExpense(supabase, expense, shares = []) {
     // Math.floor so shares never sum to more than the total; payer absorbs the remainder
     const shareAmount = Math.floor((Number(expense.amount) || 0) / totalMembers)
 
-    if (otherMembers.length) {
-      const prepared = otherMembers.map((userId) => ({
-        expense_id: expData.id,
-        user_id: userId,
-        amount: shareAmount,
-        settled: false,
-      }))
+    const prepared = [
+      // Payer's own share — settled based on the "already paid" option
+      { expense_id: expData.id, user_id: payerId, amount: shareAmount, settled: myShareAlreadyPaid === true },
+      // Everyone else starts unsettled
+      ...otherMembers.map((userId) => ({ expense_id: expData.id, user_id: userId, amount: shareAmount, settled: false })),
+    ]
 
-      const { error: sharesError } = await supabase.from('expense_shares').insert(prepared)
-      if (sharesError) throw sharesError
-    }
+    const { error: sharesError } = await supabase.from('expense_shares').insert(prepared)
+    if (sharesError) throw sharesError
   } else if (shares && shares.length) {
     const prepared = shares.map((s) => ({ ...s, expense_id: expData.id }))
     const { error: sharesError } = await supabase.from('expense_shares').insert(prepared)
@@ -241,11 +239,13 @@ export async function fetchMyUnsettledShares(supabase, { groupId, userId }) {
     .eq('settled', false)
   if (sharesErr) throw sharesErr
 
-  return (shares || []).map((share) => ({
-    shareId: share.id,
-    shareAmount: Number(share.amount),
-    expense: expenseMap[share.expense_id],
-  }))
+  return (shares || [])
+    .filter((share) => expenseMap[share.expense_id]?.payer_id !== userId)
+    .map((share) => ({
+      shareId: share.id,
+      shareAmount: Number(share.amount),
+      expense: expenseMap[share.expense_id],
+    }))
 }
 
 export async function getMemberProfiles(supabase, groupId) {
@@ -298,6 +298,9 @@ export async function fetchGroupBalances(supabase, { groupId, currentUserId }) {
       const debtorId = share.user_id
       const creditorId = payerByExpense[share.expense_id]
       const amount = Number(share.amount)
+
+      // Skip payer's own share — they can't owe themselves
+      if (debtorId === creditorId) continue
 
       if (debtorId === currentUserId) {
         balances[creditorId] = (balances[creditorId] || 0) - amount

@@ -10,6 +10,7 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
   const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0])
   const [category, setCategory] = useState('')
   const [isSplit, setIsSplit] = useState(false)
+  const [mySharePaid, setMySharePaid] = useState(false)
   const [name, setName] = useState('')
   const [period, setPeriod] = useState('monthly')
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0])
@@ -107,6 +108,7 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
           date: expenseDate,
           is_split: isSplit,
           splitWith: isSplit && splitWith.length ? splitWith : undefined,
+          myShareAlreadyPaid: isSplit ? mySharePaid : undefined,
         }
         const created = await createExpense(supabase, expense, [])
         onCreated && onCreated(created)
@@ -224,6 +226,12 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
                     </label>
                   ))}
                 </div>
+              )}
+              {isSplit && (
+                <label className="flex items-center gap-2 text-sm text-slate-300">
+                  <input type="checkbox" checked={mySharePaid} onChange={(e) => setMySharePaid(e.target.checked)} />
+                  I've already paid my share
+                </label>
               )}
             </>
           )}
