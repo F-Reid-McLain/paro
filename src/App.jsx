@@ -1,0 +1,203 @@
+import { useEffect, useState } from 'react'
+import { getSupabaseConfigMessage, isSupabaseConfigured, supabase } from './lib/supabase'
+import Dashboard from './Dashboard'
+
+function App() {
+  const [mode, setMode] = useState('signup')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [fullName, setFullName] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
+  const [user, setUser] = useState(null)
+
+  useEffect(() => {
+    if (!supabase) return undefined
+
+    let isMounted = true
+
+    async function loadSession() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      if (isMounted) {
+        setUser(session?.user ?? null)
+      }
+    }
+
+    loadSession()
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (isMounted) {
+        setUser(session?.user ?? null)
+      }
+    })
+
+    return () => {
+      isMounted = false
+      authListener.subscription.unsubscribe()
+    }
+  }, [])
+
+  async function handleSubmit(event) {
+    event.preventDefault()
+
+    if (!supabase) {
+      setMessage(getSupabaseConfigMessage())
+      return
+    }
+
+    setLoading(true)
+    setMessage('')
+
+    try {
+      if (mode === 'signup') {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { full_name: fullName },
+            emailRedirectTo: `${window.location.origin}/`,
+          },
+        })
+
+        if (error) throw error
+
+        if (data.user && !data.session) {
+          setMessage('Check your inbox for the confirmation email before signing in.')
+        } else {
+          setMessage('Account created. You are signed in.')
+        }
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password })
+        if (error) throw error
+        setMessage('Signed in successfully.')
+      }
+    } catch (error) {
+      setMessage(error.message || 'Something went wrong while contacting Supabase.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleSignOut() {
+    if (!supabase) return
+
+    const { error } = await supabase.auth.signOut()
+    if (error) {
+      setMessage(error.message)
+      return
+    }
+
+    setUser(null)
+    setMessage('Signed out.')
+  }
+
+  if (user) {
+    return <Dashboard user={user} supabase={supabase} />
+  }
+
+  return (
+    <main className="min-h-screen bg-slate-950 text-slate-100">
+      <div className="mx-auto flex min-h-screen max-w-6xl flex-col gap-10 px-6 py-12 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+        <section className="max-w-2xl space-y-6">
+          <span className="inline-flex rounded-full border border-sky-400/40 bg-sky-400/10 px-3 py-1 text-sm font-medium text-sky-200">
+            Stage 1 • Setup & auth
+          </span>
+          <div className="space-y-4">
+            <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+              Paro starts with a secure foundation for shared expenses.
+            </h1>
+            <p className="max-w-xl text-lg text-slate-300">
+              We are wiring up a Vite + React app, Tailwind styling, Supabase Auth, and the first database schema so future expense features can sit on top of a reliable base.
+            </p>
+          </div>
+
+          <ul className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-slate-300 shadow-2xl shadow-slate-950/30">
+            <li>• React + Vite + Tailwind shell is live.</li>
+            <li>• Supabase client and auth UI are connected.</li>
+            <li>• Initial SQL schema covers profiles, groups, and members.</li>
+            <li>• Next step: add expense creation and settlement flows.</li>
+          </ul>
+        </section>
+
+        <section className="w-full max-w-md rounded-3xl border border-white/10 bg-slate-900/80 p-6 shadow-2xl shadow-slate-950/40 backdrop-blur">
+          <div className="mb-6 flex rounded-full border border-white/10 bg-slate-800/70 p-1">
+            <button
+              type="button"
+              className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition ${mode === 'signup' ? 'bg-sky-500 text-white' : 'text-slate-300'}`}
+              onClick={() => setMode('signup')}
+            >
+              Create account
+            </button>
+            <button
+              type="button"
+              className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition ${mode === 'signin' ? 'bg-sky-500 text-white' : 'text-slate-300'}`}
+              onClick={() => setMode('signin')}
+            >
+              Sign in
+            </button>
+          </div>
+
+          {user ? (
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4 text-sm text-emerald-200">
+                Signed in as <span className="font-semibold">{user.email}</span>
+              </div>
+              <button
+                type="button"
+                className="w-full rounded-2xl bg-slate-800 px-4 py-3 font-medium text-slate-100 transition hover:bg-slate-700"
+                onClick={handleSignOut}
+              >
+                Sign out
+              </button>
+            </div>
+          ) : (
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              {mode === 'signup' ? (
+                <input
+                  className="w-full rounded-2xl border border-white/10 bg-slate-800 px-4 py-3 text-slate-100 outline-none ring-0 placeholder:text-slate-400"
+                  type="text"
+                  placeholder="Your name"
+                  value={fullName}
+                  onChange={(event) => setFullName(event.target.value)}
+                />
+              ) : null}
+              <input
+                className="w-full rounded-2xl border border-white/10 bg-slate-800 px-4 py-3 text-slate-100 outline-none ring-0 placeholder:text-slate-400"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required
+              />
+              <input
+                className="w-full rounded-2xl border border-white/10 bg-slate-800 px-4 py-3 text-slate-100 outline-none ring-0 placeholder:text-slate-400"
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+              />
+              <button
+                type="submit"
+                disabled={loading || !isSupabaseConfigured}
+                className="w-full rounded-2xl bg-sky-500 px-4 py-3 font-medium text-white transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:bg-slate-700"
+              >
+                {loading ? 'Working…' : mode === 'signup' ? 'Create account' : 'Sign in'}
+              </button>
+            </form>
+          )}
+
+          {message ? <p className="mt-4 text-sm text-slate-300">{message}</p> : null}
+          {!isSupabaseConfigured ? (
+            <p className="mt-4 text-sm text-amber-300">{getSupabaseConfigMessage()}</p>
+          ) : null}
+        </section>
+      </div>
+    </main>
+  )
+}
+
+export default App
