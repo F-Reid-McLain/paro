@@ -60,19 +60,19 @@ export default function Groups({ supabase, user, currentGroup, onGroupChange }) 
       <p className="text-slate-300 mt-2">Create a group or join an existing group's slug to share expenses.</p>
 
       <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className="border border-white/6 bg-slate-800 p-4">
+        <div className="border-2 border-white/10 bg-slate-800 p-4">
           <h3 className="text-sm text-slate-200">Create group</h3>
-          <input className="mt-2 w-full rounded-none bg-slate-700 px-3 py-2 text-white" placeholder="Group name" value={name} onChange={(e) => setName(e.target.value)} disabled={!!currentGroup} />
-          <input className="mt-2 w-full rounded-none bg-slate-700 px-3 py-2 text-white" placeholder="Slug (optional)" value={slug} onChange={(e) => setSlug(e.target.value)} disabled={!!currentGroup} />
+          <input className="mt-2 w-full rounded-none border-2 border-white/10 bg-slate-700 px-3 py-2 text-white" placeholder="Group name" value={name} onChange={(e) => setName(e.target.value)} disabled={!!currentGroup} />
+          <input className="mt-2 w-full rounded-none border-2 border-white/10 bg-slate-700 px-3 py-2 text-white" placeholder="Slug (optional)" value={slug} onChange={(e) => setSlug(e.target.value)} disabled={!!currentGroup} />
           <div className="mt-3 text-right">
             <button onClick={handleCreate} className="rounded-lg bg-emerald-500 px-3 py-2 text-white" disabled={!!currentGroup}>Create</button>
           </div>
           {currentGroup ? <p className="mt-3 text-sm text-amber-300">Leave your current group before creating a new one.</p> : null}
         </div>
 
-        <div className="border border-white/6 bg-slate-800 p-4">
+        <div className="border-2 border-white/10 bg-slate-800 p-4">
           <h3 className="text-sm text-slate-200">Join group</h3>
-          <input className="mt-2 w-full rounded-none bg-slate-700 px-3 py-2 text-white" placeholder="Group slug" value={joinSlug} onChange={(e) => setJoinSlug(e.target.value)} disabled={!!currentGroup} />
+          <input className="mt-2 w-full rounded-none border-2 border-white/10 bg-slate-700 px-3 py-2 text-white" placeholder="Group slug" value={joinSlug} onChange={(e) => setJoinSlug(e.target.value)} disabled={!!currentGroup} />
           <div className="mt-3 text-right">
             <button onClick={handleJoin} className="rounded-lg bg-sky-500 px-3 py-2 text-white" disabled={!!currentGroup}>Join</button>
           </div>
@@ -80,7 +80,7 @@ export default function Groups({ supabase, user, currentGroup, onGroupChange }) 
         </div>
       </div>
 
-      <div className="mt-6 border border-white/6 bg-slate-800 p-4 text-slate-200">
+      <div className="mt-6 border-2 border-white/10 bg-slate-800 p-4 text-slate-200">
         {loading ? (
           <div className="text-slate-400">Loading…</div>
         ) : groups.length === 0 ? (

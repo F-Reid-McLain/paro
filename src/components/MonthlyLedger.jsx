@@ -159,7 +159,7 @@ export default function MonthlyLedger({
     <section>
       {/* Header + month selector */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-semibold text-white">Ledger</h2>
+        <h2 className="font-pixel text-xl font-semibold text-white">Ledger</h2>
         {selectedMonth && (
           <div className="flex items-center gap-1">
             <button
@@ -171,7 +171,7 @@ export default function MonthlyLedger({
                 <path fillRule="evenodd" d="M9.78 4.22a.75.75 0 010 1.06L7.06 8l2.72 2.72a.75.75 0 11-1.06 1.06L5.47 8.53a.75.75 0 010-1.06l3.25-3.25a.75.75 0 011.06 0z" clipRule="evenodd" />
               </svg>
             </button>
-            <span className="min-w-[110px] text-center text-sm font-medium text-slate-200">{formattedMonth}</span>
+            <span className="font-pixel min-w-[110px] text-center text-[11px] font-medium text-slate-200">{formattedMonth}</span>
             <button
               type="button"
               onClick={nextMonth}
@@ -188,9 +188,9 @@ export default function MonthlyLedger({
 
       {/* Fixed-bill progress bar */}
       {splitCount > 0 && (
-        <div className="mt-4 border border-white/10 bg-slate-800/70 p-4">
+        <div className="mt-4 border-2 border-white/10 bg-slate-800/70 p-4">
           <div className="mb-2 flex items-center justify-between">
-            <p className="text-sm font-semibold text-white">Fixed bills</p>
+            <p className="font-pixel text-xs font-semibold text-white">Fixed bills</p>
             <p className={`text-sm font-medium ${allPaid ? 'text-emerald-300' : 'text-slate-300'}`}>
               {paidCount} / {splitCount} paid
             </p>
@@ -210,11 +210,11 @@ export default function MonthlyLedger({
       )}
 
       {/* Ledger list */}
-      <div className="mt-4 border border-white/6 bg-slate-800 p-4 text-slate-200">
+      <div className="mt-4 border-2 border-white/10 bg-slate-800 p-4 text-slate-200">
         {loading ? (
           <div className="text-slate-400">Loading…</div>
         ) : expenses.length === 0 ? (
-          <div className="border border-dashed border-white/10 bg-slate-900/40 p-6 text-center text-slate-400">
+          <div className="border-2 border-dashed border-white/10 bg-slate-900/40 p-6 text-center text-slate-400">
             <p className="font-medium text-slate-200">Nothing here yet.</p>
             <p className="mt-1 text-sm">No expenses recorded for {formattedMonth}.</p>
           </div>
@@ -227,10 +227,10 @@ export default function MonthlyLedger({
 
             <div className="space-y-3">
               {Object.entries(grouped).map(([kind, categories]) => (
-                <div key={kind} className="border border-white/10 bg-slate-900/50 p-3">
+                <div key={kind} className="border-2 border-white/10 bg-slate-900/50 p-3">
                   <div className="mb-2 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-base font-semibold text-white">{kind}</h3>
+                      <h3 className="font-pixel text-xs font-semibold text-white">{kind}</h3>
                       <span className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${getKindBadge(kind)}`}>{kind}</span>
                     </div>
                     <div className="text-sm text-slate-300">
@@ -245,7 +245,7 @@ export default function MonthlyLedger({
                       const catTotal = entries.reduce((s, e) => s + (Number(e.amount) || 0), 0)
 
                       return (
-                        <div key={key} className="border border-white/10 bg-slate-800/70">
+                        <div key={key} className="border-2 border-white/10 bg-slate-800/70">
                           {/* Category row — always visible, tap to expand */}
                           <button
                             type="button"
@@ -272,7 +272,7 @@ export default function MonthlyLedger({
                                 const shares = menuSharesCache[e.id] || []
 
                                 return (
-                                  <li key={e.id} className="relative border border-white/10 bg-slate-900/50 p-2.5">
+                                  <li key={e.id} className="relative border-2 border-white/10 bg-slate-900/50 p-2.5">
                                     <div className="flex items-center gap-2">
                                       <div className="min-w-0 flex-1">
                                         <div className="text-sm font-medium text-white">{e.description || 'Expense'}</div>
@@ -313,7 +313,7 @@ export default function MonthlyLedger({
 
                                     {/* Dropdown menu */}
                                     {isMenuOpen && (
-                                      <div ref={menuRef} className="absolute right-0 top-full z-50 mt-1 w-64 border border-white/10 bg-slate-800 shadow-xl shadow-slate-950/60">
+                                      <div ref={menuRef} className="absolute right-0 top-full z-50 mt-1 w-64 border-2 border-white/10 bg-slate-800 shadow-xl shadow-slate-950/60">
                                         {e.is_split && (
                                           <div className="border-b border-white/8 p-3">
                                             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Who's paid their share</p>

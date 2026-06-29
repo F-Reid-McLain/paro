@@ -130,11 +130,11 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
 
   return (
     <section className="space-y-6">
-      <h2 className="text-2xl font-semibold text-white">Settings</h2>
+      <h2 className="font-pixel text-xl font-semibold text-white">Settings</h2>
 
       {/* Account */}
-      <div className="border border-white/10 bg-slate-800/70 p-5 space-y-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-400">Account</h3>
+      <div className="border-2 border-white/10 bg-slate-800/70 p-5 space-y-4">
+        <h3 className="font-pixel text-[10px] font-semibold uppercase tracking-wider text-slate-400">Account</h3>
 
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-500/20 text-base font-semibold text-sky-300">
@@ -153,7 +153,7 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
             value={profileName}
             onChange={(e) => setProfileName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
-            className="flex-1 rounded-none bg-slate-900/60 border border-white/10 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500"
+            className="flex-1 rounded-none bg-slate-900/60 border-2 border-white/10 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500"
           />
           <button
             type="button"
@@ -180,9 +180,9 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
 
       {/* Active group — members + invite */}
       {currentGroup && (
-        <div className="border border-white/10 bg-slate-800/70 p-5 space-y-4">
+        <div className="border-2 border-white/10 bg-slate-800/70 p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-400">Active group</h3>
+            <h3 className="font-pixel text-[10px] font-semibold uppercase tracking-wider text-slate-400">Active group</h3>
             <span className="text-sm font-medium text-white">{currentGroup.name}</span>
           </div>
 
@@ -190,7 +190,7 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
           {groupMembers.length > 0 && (
             <ul className="space-y-2">
               {groupMembers.map((m) => (
-                <li key={m.userId} className="flex items-center gap-3 border border-white/8 bg-slate-900/50 px-3 py-2.5">
+                <li key={m.userId} className="flex items-center gap-3 border-2 border-white/10 bg-slate-900/50 px-3 py-2.5">
                   <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-700 text-xs font-semibold text-slate-300">
                     {m.name[0].toUpperCase()}
                   </div>
@@ -212,7 +212,7 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
           <div>
             <p className="mb-2 text-xs text-slate-400">Invite someone — share this group code</p>
             <div className="flex gap-2">
-              <div className="flex-1 border border-white/10 bg-slate-900/60 px-3 py-2 font-mono text-sm text-slate-300 truncate">
+              <div className="flex-1 border-2 border-white/10 bg-slate-900/60 px-3 py-2 font-mono text-sm text-slate-300 truncate">
                 {currentGroup.slug}
               </div>
               <button
@@ -230,8 +230,8 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
       )}
 
       {/* Groups list */}
-      <div className="border border-white/10 bg-slate-800/70 p-5">
-        <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-400">Your groups</h3>
+      <div className="border-2 border-white/10 bg-slate-800/70 p-5">
+        <h3 className="mb-4 font-pixel text-[10px] font-semibold uppercase tracking-wider text-slate-400">Your groups</h3>
         {loadingGroups ? (
           <p className="text-sm text-slate-400">Loading…</p>
         ) : groups.length === 0 ? (
@@ -242,7 +242,7 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
               const isOwner = group.owner_id === user.id
               const draftName = updates[group.id] ?? group.name
               return (
-                <div key={group.id} className="border border-white/10 bg-slate-900/60 p-4">
+                <div key={group.id} className="border-2 border-white/10 bg-slate-900/60 p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <p className="text-sm font-semibold text-white truncate">{group.name}</p>
@@ -288,7 +288,7 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
                       <input
                         value={draftName}
                         onChange={(e) => setUpdates((prev) => ({ ...prev, [group.id]: e.target.value }))}
-                        className="flex-1 rounded-none bg-slate-800 border border-white/10 px-3 py-1.5 text-sm text-slate-100"
+                        className="flex-1 rounded-none bg-slate-800 border-2 border-white/10 px-3 py-1.5 text-sm text-slate-100"
                         placeholder="Group name"
                       />
                       <button

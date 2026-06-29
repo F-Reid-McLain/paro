@@ -119,7 +119,7 @@ export default function Dashboard({ user, supabase }) {
               </button>
             ) : (
               <>
-                <h1 className="shrink-0 text-lg font-semibold">Paro</h1>
+                <h1 className="font-pixel shrink-0 text-lg font-semibold">Paro</h1>
                 {currentGroup ? (
                   <span className="truncate bg-slate-800/70 px-2 py-1 text-xs text-slate-300 max-w-[130px] sm:max-w-xs">
                     {currentGroup.name}
@@ -133,8 +133,8 @@ export default function Dashboard({ user, supabase }) {
           <div className="flex items-center gap-1">
             {!inSettings && (
               <nav className="hidden sm:flex items-center gap-1 mr-2">
-                <button onClick={() => setTab('monthly')} className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${tab === 'monthly' ? 'bg-sky-500 text-white' : 'text-slate-300 hover:text-white'}`}>Ledger</button>
-                <button onClick={() => setTab('balances')} className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${tab === 'balances' ? 'bg-sky-500 text-white' : 'text-slate-300 hover:text-white'}`}>Balances</button>
+                <button onClick={() => setTab('monthly')} className={`font-pixel rounded-lg px-3 py-1.5 text-xs font-medium transition ${tab === 'monthly' ? 'bg-sky-500 text-white' : 'text-slate-300 hover:text-white'}`}>Ledger</button>
+                <button onClick={() => setTab('balances')} className={`font-pixel rounded-lg px-3 py-1.5 text-xs font-medium transition ${tab === 'balances' ? 'bg-sky-500 text-white' : 'text-slate-300 hover:text-white'}`}>Balances</button>
                 <span className="ml-2 max-w-[180px] truncate text-xs text-slate-400">{user.email}</span>
               </nav>
             )}
@@ -152,29 +152,29 @@ export default function Dashboard({ user, supabase }) {
       <main className="mx-auto max-w-6xl px-4 py-5 pb-24 sm:px-6 sm:py-6 sm:pb-10">
         {tab === 'monthly' ? (
           <div className="mb-6 space-y-4">
-            <div className="border border-white/10 bg-slate-800/70 p-4 shadow-lg shadow-slate-950/30">
+            <div className="border-2 border-white/10 bg-slate-800/70 p-4 shadow-lg shadow-slate-950/30">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <p className="text-sm font-medium text-sky-300">At a glance</p>
+                  <p className="font-pixel text-xs font-medium text-sky-300">At a glance</p>
                   <h2 className="text-lg font-semibold text-white">{currentGroup?.name || 'Choose a group to begin'}</h2>
                   <p className="text-sm text-slate-400">{totalTracked} entries tracked • {fixedCount} fixed • {variableCount} variable</p>
                 </div>
-                <div className="border border-white/10 bg-slate-900/70 px-4 py-3 text-right">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Current total</p>
+                <div className="border-2 border-white/10 bg-slate-900/70 px-4 py-3 text-right">
+                  <p className="font-pixel text-[9px] uppercase tracking-[0.15em] text-slate-400">Current total</p>
                   <p className="text-xl font-semibold text-white">${(totalAmount / 100).toFixed(2)}</p>
                 </div>
               </div>
             </div>
 
-            <div className="border border-white/10 bg-slate-800/70 p-4 shadow-lg shadow-slate-950/20">
+            <div className="border-2 border-white/10 bg-slate-800/70 p-4 shadow-lg shadow-slate-950/20">
               <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-white">Recent activity</h3>
+                <h3 className="font-pixel text-xs font-semibold text-white">Recent activity</h3>
                 <span className="text-xs text-slate-400">Latest updates</span>
               </div>
               {recentActivity.length ? (
                 <ul className="space-y-2">
                   {recentActivity.map((entry) => (
-                    <li key={entry.id} className="flex items-center justify-between border border-white/10 bg-slate-900/60 px-3 py-2">
+                    <li key={entry.id} className="flex items-center justify-between border-2 border-white/10 bg-slate-900/60 px-3 py-2">
                       <div>
                         <p className="text-sm font-medium text-slate-100">{entry.description || 'Expense'}</p>
                         <p className="text-xs text-slate-400">{entry.is_fixed ? 'Fixed' : 'Variable'} • {entry.category || 'Other'}</p>
@@ -221,8 +221,8 @@ export default function Dashboard({ user, supabase }) {
           className="fixed inset-x-0 bottom-0 z-40 flex border-t border-white/8 bg-slate-950/95 backdrop-blur-md sm:hidden"
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
-          <button onClick={() => setTab('monthly')} className={`flex-1 py-3 text-sm font-medium border-t-2 transition-colors ${tab === 'monthly' ? 'border-sky-500 text-sky-400' : 'border-transparent text-slate-500'}`}>Ledger</button>
-          <button onClick={() => setTab('balances')} className={`flex-1 py-3 text-sm font-medium border-t-2 transition-colors ${tab === 'balances' ? 'border-sky-500 text-sky-400' : 'border-transparent text-slate-500'}`}>Balances</button>
+          <button onClick={() => setTab('monthly')} className={`font-pixel flex-1 py-3 text-xs font-medium border-t-2 transition-colors ${tab === 'monthly' ? 'border-sky-500 text-sky-400' : 'border-transparent text-slate-500'}`}>Ledger</button>
+          <button onClick={() => setTab('balances')} className={`font-pixel flex-1 py-3 text-xs font-medium border-t-2 transition-colors ${tab === 'balances' ? 'border-sky-500 text-sky-400' : 'border-transparent text-slate-500'}`}>Balances</button>
         </nav>
       )}
 

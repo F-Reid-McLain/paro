@@ -17,7 +17,16 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: radial-gradient(circle at top, #1e3a8a 0%, #020617 55%);
+  background-color: #020617;
+  background-image: radial-gradient(circle, rgba(148, 163, 184, 0.07) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.font-pixel {
+  font-family: 'Silkscreen', monospace;
+  letter-spacing: 0.03em;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: unset;
 }
 
 * {

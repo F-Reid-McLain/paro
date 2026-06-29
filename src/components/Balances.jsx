@@ -92,7 +92,7 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
       {/* Net balances */}
       <div>
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-semibold text-white">Balances</h2>
+          <h2 className="font-pixel text-xl font-semibold text-white">Balances</h2>
           <span className="text-xs text-slate-400">{currentGroup?.name}</span>
         </div>
         <p className="mt-2 text-slate-300">Net amounts owed across all unsettled expenses.</p>
@@ -103,7 +103,7 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
           ) : loading ? (
             <p className="text-slate-400">Loading…</p>
           ) : balanceEntries.length === 0 ? (
-            <div className="border border-dashed border-white/10 bg-slate-800/50 p-6 text-center">
+            <div className="border-2 border-dashed border-white/10 bg-slate-800/50 p-6 text-center">
               <p className="font-semibold text-slate-200">All settled up!</p>
               <p className="mt-1 text-sm text-slate-400">No outstanding balances in {currentGroup.name}.</p>
             </div>
@@ -114,7 +114,7 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
                 const youOwe = netAmount < 0
                 const absAmount = Math.abs(netAmount)
                 return (
-                  <li key={userId} className="flex items-center justify-between border border-white/10 bg-slate-800/70 px-4 py-4">
+                  <li key={userId} className="flex items-center justify-between border-2 border-white/10 bg-slate-800/70 px-4 py-4">
                     <div>
                       <p className="font-medium text-white">{name}</p>
                       <p className={`mt-0.5 text-sm font-medium ${youOwe ? 'text-amber-300' : 'text-emerald-300'}`}>
@@ -141,11 +141,11 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
       {/* Recurring splits */}
       {currentGroup && !loading && splitFixed.length > 0 && (
         <div>
-          <h3 className="text-lg font-semibold text-white">Recurring splits</h3>
+          <h3 className="font-pixel text-sm font-semibold text-white">Recurring splits</h3>
           <p className="mt-1 text-sm text-slate-300">Fixed expenses shared evenly among all group members.</p>
           <ul className="mt-4 space-y-2">
             {splitFixed.map((fe) => (
-              <li key={fe.id} className="border border-white/10 bg-slate-800/70 px-4 py-3">
+              <li key={fe.id} className="border-2 border-white/10 bg-slate-800/70 px-4 py-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium text-white">{fe.name}</p>
@@ -183,11 +183,11 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
       {/* Your own unpaid contributions */}
       {currentGroup && !loading && selfShares.length > 0 && (
         <div>
-          <h3 className="text-lg font-semibold text-white">Your unpaid contributions</h3>
+          <h3 className="font-pixel text-sm font-semibold text-white">Your unpaid contributions</h3>
           <p className="mt-1 text-sm text-slate-300">Expenses you created and split, but haven't marked your own share as paid yet.</p>
           <ul className="mt-4 space-y-2">
             {selfShares.map(({ shareId, shareAmount, expense }) => (
-              <li key={shareId} className="flex items-center justify-between border border-white/10 bg-slate-800/70 px-4 py-3">
+              <li key={shareId} className="flex items-center justify-between border-2 border-white/10 bg-slate-800/70 px-4 py-3">
                 <div>
                   <p className="font-medium text-white">{expense?.description || 'Expense'}</p>
                   <p className="mt-0.5 text-xs text-slate-400">
