@@ -146,7 +146,7 @@ export default function MonthlyLedger({
     if (c.includes('food') || c.includes('grocer') || c.includes('dine')) return 'border-amber-400/30 bg-amber-500/15 text-amber-200'
     if (c.includes('transport') || c.includes('gas') || c.includes('travel')) return 'border-sky-400/30 bg-sky-500/15 text-sky-200'
     if (c.includes('bill') || c.includes('utility') || c.includes('internet')) return 'border-emerald-400/30 bg-emerald-500/15 text-emerald-200'
-    return 'border-slate-500/30 bg-slate-600/20 text-slate-200'
+    return 'border-slate-500/30 bg-slate-600/20 text-lo'
   }
 
   function getKindBadge(kind) {
@@ -159,24 +159,24 @@ export default function MonthlyLedger({
     <section>
       {/* Header + month selector */}
       <div className="flex items-center justify-between">
-        <h2 className="font-pixel text-xl font-semibold text-white">Ledger</h2>
+        <h2 className="font-pixel text-xl font-semibold text-hi">Ledger</h2>
         {selectedMonth && (
           <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={prevMonth}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-dim hover:bg-card hover:text-hi transition-colors"
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
                 <path fillRule="evenodd" d="M9.78 4.22a.75.75 0 010 1.06L7.06 8l2.72 2.72a.75.75 0 11-1.06 1.06L5.47 8.53a.75.75 0 010-1.06l3.25-3.25a.75.75 0 011.06 0z" clipRule="evenodd" />
               </svg>
             </button>
-            <span className="font-pixel min-w-[110px] text-center text-[11px] font-medium text-slate-200">{formattedMonth}</span>
+            <span className="font-pixel min-w-[110px] text-center text-[11px] font-medium text-lo">{formattedMonth}</span>
             <button
               type="button"
               onClick={nextMonth}
               disabled={isCurrentMonth}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-dim hover:bg-card hover:text-hi transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
                 <path fillRule="evenodd" d="M6.22 4.22a.75.75 0 011.06 0l3.25 3.25a.75.75 0 010 1.06l-3.25 3.25a.75.75 0 01-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 010-1.06z" clipRule="evenodd" />
@@ -188,14 +188,14 @@ export default function MonthlyLedger({
 
       {/* Fixed-bill progress bar */}
       {splitCount > 0 && (
-        <div className="mt-4 border-2 border-white/10 bg-slate-800/70 p-4">
+        <div className="mt-4 border-2 border-def bg-card p-4">
           <div className="mb-2 flex items-center justify-between">
-            <p className="font-pixel text-xs font-semibold text-white">Fixed bills</p>
-            <p className={`text-sm font-medium ${allPaid ? 'text-emerald-300' : 'text-slate-300'}`}>
+            <p className="font-pixel text-xs font-semibold text-hi">Fixed bills</p>
+            <p className={`text-sm font-medium ${allPaid ? 'text-emerald-300' : 'text-lo'}`}>
               {paidCount} / {splitCount} paid
             </p>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-slate-700">
+          <div className="h-2 overflow-hidden rounded-full bg-input">
             <div
               className={`h-full rounded-full transition-all duration-500 ${
                 allPaid ? 'bg-emerald-500' : paidCount > 0 ? 'bg-amber-400' : 'bg-slate-500'
@@ -210,30 +210,30 @@ export default function MonthlyLedger({
       )}
 
       {/* Ledger list */}
-      <div className="mt-4 border-2 border-white/10 bg-slate-800 p-4 text-slate-200">
+      <div className="mt-4 border-2 border-def bg-card p-4 text-lo">
         {loading ? (
-          <div className="text-slate-400">Loading…</div>
+          <div className="text-dim">Loading…</div>
         ) : expenses.length === 0 ? (
-          <div className="border-2 border-dashed border-white/10 bg-slate-900/40 p-6 text-center text-slate-400">
-            <p className="font-medium text-slate-200">Nothing here yet.</p>
+          <div className="border-2 border-dashed border-def bg-deep p-6 text-center text-dim">
+            <p className="font-medium text-lo">Nothing here yet.</p>
             <p className="mt-1 text-sm">No expenses recorded for {formattedMonth}.</p>
           </div>
         ) : (
           <>
             <div className="mb-4 flex items-center justify-between">
-              <div className="text-sm text-slate-300">{expenses.length} expenses</div>
-              <div className="font-medium text-white">Total ${(overallTotal / 100).toFixed(2)}</div>
+              <div className="text-sm text-lo">{expenses.length} expenses</div>
+              <div className="font-medium text-hi">Total ${(overallTotal / 100).toFixed(2)}</div>
             </div>
 
             <div className="space-y-3">
               {Object.entries(grouped).map(([kind, categories]) => (
-                <div key={kind} className="border-2 border-white/10 bg-slate-900/50 p-3">
+                <div key={kind} className="border-2 border-def bg-deep p-3">
                   <div className="mb-2 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <h3 className="font-pixel text-xs font-semibold text-white">{kind}</h3>
+                      <h3 className="font-pixel text-xs font-semibold text-hi">{kind}</h3>
                       <span className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${getKindBadge(kind)}`}>{kind}</span>
                     </div>
-                    <div className="text-sm text-slate-300">
+                    <div className="text-sm text-lo">
                       ${(Object.values(categories).reduce((s, es) => s + es.reduce((a, e) => a + (Number(e.amount) || 0), 0), 0) / 100).toFixed(2)}
                     </div>
                   </div>
@@ -245,7 +245,7 @@ export default function MonthlyLedger({
                       const catTotal = entries.reduce((s, e) => s + (Number(e.amount) || 0), 0)
 
                       return (
-                        <div key={key} className="border-2 border-white/10 bg-slate-800/70">
+                        <div key={key} className="border-2 border-def bg-card">
                           {/* Category row — always visible, tap to expand */}
                           <button
                             type="button"
@@ -254,17 +254,17 @@ export default function MonthlyLedger({
                           >
                             <div className="flex items-center gap-2">
                               <span className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${getCategoryBadge(category)}`}>{category}</span>
-                              <span className="text-xs text-slate-400">{entries.length} item{entries.length !== 1 ? 's' : ''}</span>
+                              <span className="text-xs text-dim">{entries.length} item{entries.length !== 1 ? 's' : ''}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-sm text-slate-300">${(catTotal / 100).toFixed(2)}</span>
-                              <span className="text-slate-500">{isCollapsed ? <ChevronRight /> : <ChevronDown />}</span>
+                              <span className="text-sm text-lo">${(catTotal / 100).toFixed(2)}</span>
+                              <span className="text-faint">{isCollapsed ? <ChevronRight /> : <ChevronDown />}</span>
                             </div>
                           </button>
 
                           {/* Items — hidden when collapsed */}
                           {!isCollapsed && (
-                            <ul className="border-t border-white/6 px-2 pb-2 pt-1 space-y-1.5">
+                            <ul className="border-t border-def px-2 pb-2 pt-1 space-y-1.5">
                               {entries.map((e) => {
                                 const myShare = userShares.find((s) => s.expense_id === e.id)
                                 const canDelete = e.is_fixed || e.payer_id === user.id
@@ -272,11 +272,11 @@ export default function MonthlyLedger({
                                 const shares = menuSharesCache[e.id] || []
 
                                 return (
-                                  <li key={e.id} className="relative border-2 border-white/10 bg-slate-900/50 p-2.5">
+                                  <li key={e.id} className="relative border-2 border-def bg-deep p-2.5">
                                     <div className="flex items-center gap-2">
                                       <div className="min-w-0 flex-1">
-                                        <div className="text-sm font-medium text-white">{e.description || 'Expense'}</div>
-                                        <div className="text-xs text-slate-400">
+                                        <div className="text-sm font-medium text-hi">{e.description || 'Expense'}</div>
+                                        <div className="text-xs text-dim">
                                           {new Date(e.date || e.created_at).toLocaleDateString()}
                                           {e.is_split ? ' • Split' : ''}
                                           {e.period ? ` • ${e.period}` : ''}
@@ -286,13 +286,13 @@ export default function MonthlyLedger({
                                         </div>
                                       </div>
                                       <div className="shrink-0 text-right">
-                                        <div className="text-sm font-medium text-white">${(e.amount / 100).toFixed(2)}</div>
+                                        <div className="text-sm font-medium text-hi">${(e.amount / 100).toFixed(2)}</div>
                                         {myShare ? (
                                           myShare.settled
                                             ? <div className="text-xs text-emerald-300">Settled</div>
                                             : <div className="text-xs text-amber-300">You owe ${(myShare.amount / 100).toFixed(2)}</div>
                                         ) : e.is_split && e.payer_id === user.id ? (
-                                          <div className="text-xs text-slate-400">You paid</div>
+                                          <div className="text-xs text-dim">You paid</div>
                                         ) : null}
                                       </div>
 
@@ -300,7 +300,7 @@ export default function MonthlyLedger({
                                       <button
                                         type="button"
                                         onClick={() => openMenu(e)}
-                                        className={`shrink-0 flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-700 hover:text-white transition-colors ${isMenuOpen ? 'bg-slate-700 text-white' : ''}`}
+                                        className={`shrink-0 flex h-7 w-7 items-center justify-center rounded-lg text-dim hover:bg-input hover:text-hi transition-colors ${isMenuOpen ? 'bg-input text-hi' : ''}`}
                                         aria-label="Options"
                                       >
                                         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
@@ -313,22 +313,22 @@ export default function MonthlyLedger({
 
                                     {/* Dropdown menu */}
                                     {isMenuOpen && (
-                                      <div ref={menuRef} className="absolute right-0 top-full z-50 mt-1 w-64 border-2 border-white/10 bg-slate-800 shadow-xl shadow-slate-950/60">
+                                      <div ref={menuRef} className="absolute right-0 top-full z-50 mt-1 w-64 border-2 border-def bg-card shadow-xl shadow-slate-950/60">
                                         {e.is_split && (
-                                          <div className="border-b border-white/8 p-3">
-                                            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Who's paid their share</p>
+                                          <div className="border-b border-def p-3">
+                                            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-dim">Who's paid their share</p>
                                             {loadingMenuShares && !shares.length ? (
-                                              <p className="text-xs text-slate-400">Loading…</p>
+                                              <p className="text-xs text-dim">Loading…</p>
                                             ) : shares.length === 0 ? (
-                                              <p className="text-xs text-slate-400">No shares recorded.</p>
+                                              <p className="text-xs text-dim">No shares recorded.</p>
                                             ) : (
                                               <ul className="space-y-1.5">
                                                 {shares.map((share) => (
                                                   <li key={share.id} className="flex items-center justify-between gap-2">
                                                     <div className="flex items-center gap-2 min-w-0">
                                                       <span className={`h-2 w-2 shrink-0 rounded-full ${share.settled ? 'bg-emerald-400' : 'bg-amber-400'}`} />
-                                                      <span className="truncate text-sm text-slate-200">{share.name}</span>
-                                                      <span className="shrink-0 text-xs text-slate-400">${(share.amount / 100).toFixed(2)}</span>
+                                                      <span className="truncate text-sm text-lo">{share.name}</span>
+                                                      <span className="shrink-0 text-xs text-dim">${(share.amount / 100).toFixed(2)}</span>
                                                     </div>
                                                     <button
                                                       type="button"
@@ -336,7 +336,7 @@ export default function MonthlyLedger({
                                                       onClick={() => handleToggleShare(share.id, share.settled, e.id)}
                                                       className={`shrink-0 rounded-md px-2 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${
                                                         share.settled
-                                                          ? 'bg-slate-700 text-slate-300 hover:bg-amber-500/20 hover:text-amber-300'
+                                                          ? 'bg-input text-lo hover:bg-amber-500/20 hover:text-amber-300'
                                                           : 'bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600/40'
                                                       }`}
                                                     >
@@ -350,8 +350,8 @@ export default function MonthlyLedger({
                                         )}
 
                                         {myShare && (
-                                          <div className="border-b border-white/8 p-3">
-                                            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Your share</p>
+                                          <div className="border-b border-def p-3">
+                                            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-dim">Your share</p>
                                             <div className="flex items-center justify-between">
                                               <span className={`text-sm font-medium ${myShare.settled ? 'text-emerald-300' : 'text-amber-300'}`}>
                                                 {myShare.settled ? 'Settled' : `You owe $${(myShare.amount / 100).toFixed(2)}`}
@@ -362,8 +362,8 @@ export default function MonthlyLedger({
                                                 onClick={() => handleToggleShare(myShare.id, myShare.settled, e.id)}
                                                 className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
                                                   myShare.settled
-                                                    ? 'bg-slate-700 text-slate-300 hover:bg-amber-500/20 hover:text-amber-300'
-                                                    : 'bg-emerald-600 text-white hover:bg-emerald-500'
+                                                    ? 'bg-input text-lo hover:bg-amber-500/20 hover:text-amber-300'
+                                                    : 'bg-emerald-600 text-hi hover:bg-emerald-500'
                                                 }`}
                                               >
                                                 {togglingShare === myShare.id ? '…' : myShare.settled ? 'Mark unpaid' : 'Mark settled'}
@@ -389,7 +389,7 @@ export default function MonthlyLedger({
 
                                         {!e.is_split && !myShare && !canDelete && (
                                           <div className="p-3">
-                                            <p className="text-xs text-slate-400">No actions available.</p>
+                                            <p className="text-xs text-dim">No actions available.</p>
                                           </div>
                                         )}
                                       </div>

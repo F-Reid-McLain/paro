@@ -91,15 +91,15 @@ export default function FixedExpenses({ supabase, user, currentGroup, onChanged,
     <section>
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-white">Fixed Expenses</h2>
-          <p className="mt-2 text-slate-300">Manage recurring fixed expenses by period (monthly, yearly, etc.).</p>
+          <h2 className="text-2xl font-semibold text-hi">Fixed Expenses</h2>
+          <p className="mt-2 text-lo">Manage recurring fixed expenses by period (monthly, yearly, etc.).</p>
         </div>
-        {selectedGroup ? <div className="rounded bg-slate-800 px-3 py-2 text-sm text-slate-300">Group: {selectedGroup.name}</div> : null}
+        {selectedGroup ? <div className="rounded bg-card px-3 py-2 text-sm text-lo">Group: {selectedGroup.name}</div> : null}
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-6 rounded border border-white/6 bg-slate-800 p-4 text-slate-200 space-y-3">
+      <form onSubmit={handleSubmit} className="mt-6 rounded border border-def bg-card p-4 text-lo space-y-3">
         <select
-          className="w-full rounded bg-slate-900 px-3 py-2 text-slate-100"
+          className="w-full rounded bg-page px-3 py-2 text-hi"
           value={groupId}
           onChange={(e) => {
             const nextGroupId = e.target.value
@@ -113,31 +113,31 @@ export default function FixedExpenses({ supabase, user, currentGroup, onChanged,
           {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
         </select>
 
-        <input className="w-full rounded bg-slate-900 px-3 py-2 text-slate-100" placeholder="Expense name" value={name} onChange={(e) => setName(e.target.value)} />
-        <input inputMode="decimal" type="number" step="0.01" className="w-full rounded bg-slate-900 px-3 py-2 text-slate-100" placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
-        <select className="w-full rounded bg-slate-900 px-3 py-2 text-slate-100" value={period} onChange={(e) => setPeriod(e.target.value)}>
+        <input className="w-full rounded bg-page px-3 py-2 text-hi" placeholder="Expense name" value={name} onChange={(e) => setName(e.target.value)} />
+        <input inputMode="decimal" type="number" step="0.01" className="w-full rounded bg-page px-3 py-2 text-hi" placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
+        <select className="w-full rounded bg-page px-3 py-2 text-hi" value={period} onChange={(e) => setPeriod(e.target.value)}>
           <option value="monthly">Monthly</option>
           <option value="weekly">Weekly</option>
           <option value="yearly">Yearly</option>
           <option value="one-time">One-time</option>
         </select>
-        <label className="block text-sm text-slate-300">
+        <label className="block text-sm text-lo">
           <span className="mb-1 block">End date (optional)</span>
-          <input type="date" className="w-full rounded bg-slate-900 px-3 py-2 text-slate-100" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+          <input type="date" className="w-full rounded bg-page px-3 py-2 text-hi" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
         </label>
-        <button type="submit" disabled={saving} className="rounded bg-sky-500 px-4 py-2 text-white disabled:opacity-60">{saving ? 'Saving…' : 'Add fixed expense'}</button>
+        <button type="submit" disabled={saving} className="rounded bg-sky-500 px-4 py-2 text-hi disabled:opacity-60">{saving ? 'Saving…' : 'Add fixed expense'}</button>
       </form>
 
-      <div className="mt-6 rounded border border-white/6 bg-slate-800 p-4 text-slate-200">
-        {loading ? <div className="text-slate-400">Loading…</div> : items.length === 0 ? <div className="text-slate-400">No fixed expenses yet.</div> : (
+      <div className="mt-6 rounded border border-def bg-card p-4 text-lo">
+        {loading ? <div className="text-dim">Loading…</div> : items.length === 0 ? <div className="text-dim">No fixed expenses yet.</div> : (
           <ul className="space-y-3">
             {items.map((item) => (
-              <li key={item.id} className="flex items-center justify-between rounded bg-slate-900/40 p-3">
+              <li key={item.id} className="flex items-center justify-between rounded bg-deep p-3">
                 <div>
-                  <div className="font-medium text-white">{item.name}</div>
-                  <div className="text-sm text-slate-400">{item.period}</div>
+                  <div className="font-medium text-hi">{item.name}</div>
+                  <div className="text-sm text-dim">{item.period}</div>
                 </div>
-                <div className="font-medium text-white">${(Number(item.amount) / 100).toFixed(2)}</div>
+                <div className="font-medium text-hi">${(Number(item.amount) / 100).toFixed(2)}</div>
               </li>
             ))}
           </ul>

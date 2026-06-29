@@ -92,20 +92,20 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
       {/* Net balances */}
       <div>
         <div className="flex items-center justify-between">
-          <h2 className="font-pixel text-xl font-semibold text-white">Balances</h2>
-          <span className="text-xs text-slate-400">{currentGroup?.name}</span>
+          <h2 className="font-pixel text-xl font-semibold text-hi">Balances</h2>
+          <span className="text-xs text-dim">{currentGroup?.name}</span>
         </div>
-        <p className="mt-2 text-slate-300">Net amounts owed across all unsettled expenses.</p>
+        <p className="mt-2 text-lo">Net amounts owed across all unsettled expenses.</p>
 
         <div className="mt-4">
           {!currentGroup ? (
-            <p className="text-slate-400">Select a group to see balances.</p>
+            <p className="text-dim">Select a group to see balances.</p>
           ) : loading ? (
-            <p className="text-slate-400">Loading…</p>
+            <p className="text-dim">Loading…</p>
           ) : balanceEntries.length === 0 ? (
-            <div className="border-2 border-dashed border-white/10 bg-slate-800/50 p-6 text-center">
-              <p className="font-semibold text-slate-200">All settled up!</p>
-              <p className="mt-1 text-sm text-slate-400">No outstanding balances in {currentGroup.name}.</p>
+            <div className="border-2 border-dashed border-def bg-card p-6 text-center">
+              <p className="font-semibold text-lo">All settled up!</p>
+              <p className="mt-1 text-sm text-dim">No outstanding balances in {currentGroup.name}.</p>
             </div>
           ) : (
             <ul className="space-y-3">
@@ -114,19 +114,19 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
                 const youOwe = netAmount < 0
                 const absAmount = Math.abs(netAmount)
                 return (
-                  <li key={userId} className="flex items-center justify-between border-2 border-white/10 bg-slate-800/70 px-4 py-4">
+                  <li key={userId} className="flex items-center justify-between border-2 border-def bg-card px-4 py-4">
                     <div>
-                      <p className="font-medium text-white">{name}</p>
+                      <p className="font-medium text-hi">{name}</p>
                       <p className={`mt-0.5 text-sm font-medium ${youOwe ? 'text-amber-300' : 'text-emerald-300'}`}>
                         {youOwe ? `You owe $${(absAmount / 100).toFixed(2)}` : `Owes you $${(absAmount / 100).toFixed(2)}`}
                       </p>
-                      <p className="mt-1 text-xs text-slate-500">Mark individual expenses paid via the ledger ⋯ menu</p>
+                      <p className="mt-1 text-xs text-faint">Mark individual expenses paid via the ledger ⋯ menu</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => handleSettleUp(userId)}
                       disabled={settling === userId}
-                      className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+                      className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-hi disabled:opacity-60"
                     >
                       {settling === userId ? 'Settling…' : 'Settle all'}
                     </button>
@@ -141,22 +141,22 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
       {/* Recurring splits */}
       {currentGroup && !loading && splitFixed.length > 0 && (
         <div>
-          <h3 className="font-pixel text-sm font-semibold text-white">Recurring splits</h3>
-          <p className="mt-1 text-sm text-slate-300">Fixed expenses shared evenly among all group members.</p>
+          <h3 className="font-pixel text-sm font-semibold text-hi">Recurring splits</h3>
+          <p className="mt-1 text-sm text-lo">Fixed expenses shared evenly among all group members.</p>
           <ul className="mt-4 space-y-2">
             {splitFixed.map((fe) => (
-              <li key={fe.id} className="border-2 border-white/10 bg-slate-800/70 px-4 py-3">
+              <li key={fe.id} className="border-2 border-def bg-card px-4 py-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-white">{fe.name}</p>
-                    <p className="mt-0.5 text-xs text-slate-400">
+                    <p className="font-medium text-hi">{fe.name}</p>
+                    <p className="mt-0.5 text-xs text-dim">
                       {fe.period} • {fe.memberCount} members • total ${(fe.amount / 100).toFixed(2)}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="text-right">
-                      <p className="text-sm font-semibold text-white">${(fe.myShare / 100).toFixed(2)}</p>
-                      <p className="text-xs text-slate-400">your share</p>
+                      <p className="text-sm font-semibold text-hi">${(fe.myShare / 100).toFixed(2)}</p>
+                      <p className="text-xs text-dim">your share</p>
                     </div>
                     {fe.paidThisPeriod ? (
                       <span className="rounded-lg bg-emerald-600/20 border border-emerald-500/30 px-3 py-1.5 text-xs font-medium text-emerald-300">
@@ -167,7 +167,7 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
                         type="button"
                         disabled={markingFixed.has(fe.id)}
                         onClick={() => handleMarkFixedPaid(fe)}
-                        className="rounded-lg bg-accent-dark px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
+                        className="rounded-lg bg-accent-dark px-3 py-1.5 text-xs font-medium text-hi disabled:opacity-60"
                       >
                         {markingFixed.has(fe.id) ? '…' : `Mark ${fe.currentPeriodLabel} paid`}
                       </button>
@@ -183,24 +183,24 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
       {/* Your own unpaid contributions */}
       {currentGroup && !loading && selfShares.length > 0 && (
         <div>
-          <h3 className="font-pixel text-sm font-semibold text-white">Your unpaid contributions</h3>
-          <p className="mt-1 text-sm text-slate-300">Expenses you created and split, but haven't marked your own share as paid yet.</p>
+          <h3 className="font-pixel text-sm font-semibold text-hi">Your unpaid contributions</h3>
+          <p className="mt-1 text-sm text-lo">Expenses you created and split, but haven't marked your own share as paid yet.</p>
           <ul className="mt-4 space-y-2">
             {selfShares.map(({ shareId, shareAmount, expense }) => (
-              <li key={shareId} className="flex items-center justify-between border-2 border-white/10 bg-slate-800/70 px-4 py-3">
+              <li key={shareId} className="flex items-center justify-between border-2 border-def bg-card px-4 py-3">
                 <div>
-                  <p className="font-medium text-white">{expense?.description || 'Expense'}</p>
-                  <p className="mt-0.5 text-xs text-slate-400">
+                  <p className="font-medium text-hi">{expense?.description || 'Expense'}</p>
+                  <p className="mt-0.5 text-xs text-dim">
                     {expense?.date ? new Date(expense.date).toLocaleDateString() : ''} • your share
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <p className="text-sm font-semibold text-white">${(shareAmount / 100).toFixed(2)}</p>
+                  <p className="text-sm font-semibold text-hi">${(shareAmount / 100).toFixed(2)}</p>
                   <button
                     type="button"
                     onClick={() => handleSettleShare(shareId)}
                     disabled={settlingShare === shareId}
-                    className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
+                    className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-hi disabled:opacity-60"
                   >
                     {settlingShare === shareId ? '…' : 'Mark paid'}
                   </button>

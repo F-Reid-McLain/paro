@@ -32,11 +32,10 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
   }
 
   const THEMES = [
-    { id: 'midnight', name: 'Midnight', color: '#0ea5e9' },
-    { id: 'synthwave', name: 'Synthwave', color: '#8b5cf6' },
-    { id: 'ember', name: 'Ember', color: '#f97316' },
-    { id: 'rose', name: 'Rose', color: '#ec4899' },
-    { id: 'neon', name: 'Neon', color: '#06b6d4' },
+    { id: 'midnight', name: 'Midnight', bg: '#020617', accent: '#0ea5e9' },
+    { id: 'forest',   name: 'Forest',   bg: '#0b0a05', accent: '#22c55e' },
+    { id: 'ash',      name: 'Ash',      bg: '#111111', accent: '#6b7280' },
+    { id: 'blackout', name: 'Blackout', bg: '#000000', accent: '#22c55e' },
   ]
 
   useEffect(() => {
@@ -149,19 +148,19 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
 
   return (
     <section className="space-y-6">
-      <h2 className="font-pixel text-xl font-semibold text-white">Settings</h2>
+      <h2 className="font-pixel text-xl font-semibold text-hi">Settings</h2>
 
       {/* Account */}
-      <div className="border-2 border-white/10 bg-slate-800/70 p-5 space-y-4">
-        <h3 className="font-pixel text-[10px] font-semibold uppercase tracking-wider text-slate-400">Account</h3>
+      <div className="border-2 border-def bg-card p-5 space-y-4">
+        <h3 className="font-pixel text-[10px] font-semibold uppercase tracking-wider text-dim">Account</h3>
 
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-500/20 text-base font-semibold text-sky-300">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-base font-semibold text-hi" style={{ opacity: 0.85 }}>
             {(profileName || user.email || '?')[0].toUpperCase()}
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-medium text-white truncate">{profileName || 'No display name set'}</p>
-            <p className="text-xs text-slate-400 truncate">{user.email}</p>
+            <p className="text-sm font-medium text-hi truncate">{profileName || 'No display name set'}</p>
+            <p className="text-xs text-dim truncate">{user.email}</p>
           </div>
         </div>
 
@@ -172,13 +171,13 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
             value={profileName}
             onChange={(e) => setProfileName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
-            className="flex-1 rounded-none bg-slate-900/60 border-2 border-white/10 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500"
+            className="flex-1 rounded-none bg-deep border-2 border-def px-3 py-2 text-sm text-hi placeholder:text-faint"
           />
           <button
             type="button"
             onClick={handleSaveName}
             disabled={savingName || !profileName.trim()}
-            className="rounded-lg bg-accent-dark px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+            className="rounded-lg bg-accent-dark px-4 py-2 text-sm font-medium text-hi disabled:opacity-50"
           >
             {savingName ? 'Saving…' : 'Save'}
           </button>
@@ -188,7 +187,7 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
           type="button"
           onClick={handleSignOut}
           disabled={signingOut}
-          className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 px-4 py-2.5 text-sm font-medium text-slate-300 hover:bg-slate-700 hover:text-white transition-colors disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-2 rounded-lg border border-def px-4 py-2.5 text-sm font-medium text-lo hover:bg-input hover:text-hi transition-colors disabled:opacity-50"
         >
           <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
             <path fillRule="evenodd" d="M2 4.75A2.75 2.75 0 014.75 2h3.5a.75.75 0 010 1.5h-3.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h3.5a.75.75 0 010 1.5h-3.5A2.75 2.75 0 012 11.25v-6.5zm9.47.47a.75.75 0 011.06 0l2.25 2.25a.75.75 0 010 1.06l-2.25 2.25a.75.75 0 01-1.06-1.06l.97-.97H6.75a.75.75 0 010-1.5h5.69l-.97-.97a.75.75 0 010-1.06z" clipRule="evenodd" />
@@ -198,52 +197,61 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
       </div>
 
       {/* Appearance */}
-      <div className="border-2 border-white/10 bg-slate-800/70 p-5 space-y-4">
-        <h3 className="font-pixel text-[10px] font-semibold uppercase tracking-wider text-slate-400">Appearance</h3>
-        <div className="grid grid-cols-5 gap-2">
-          {THEMES.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => handleThemeChange(t.id)}
-              className={`flex flex-col items-center gap-1.5 p-2 transition-opacity rounded-lg ${activeTheme === t.id ? 'opacity-100' : 'opacity-40 hover:opacity-70'}`}
-            >
-              <div
-                className="h-9 w-9 border-2"
-                style={{
-                  backgroundColor: t.color,
-                  borderColor: activeTheme === t.id ? '#fff' : 'transparent',
-                }}
-              />
-              <span className="font-pixel text-[8px] leading-tight text-slate-300 text-center">{t.name}</span>
-            </button>
-          ))}
+      <div className="border-2 border-def bg-card p-5 space-y-4">
+        <h3 className="font-pixel text-[10px] font-semibold uppercase tracking-wider text-dim">Appearance</h3>
+        <div className="grid grid-cols-4 gap-3">
+          {THEMES.map((t) => {
+            const active = activeTheme === t.id
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => handleThemeChange(t.id)}
+                className={`flex flex-col items-center gap-2 rounded-lg p-2 transition-opacity ${active ? 'opacity-100' : 'opacity-50 hover:opacity-80'}`}
+              >
+                {/* Swatch: bg color fills square, accent dot in corner */}
+                <div
+                  className="relative h-12 w-full border-2"
+                  style={{
+                    backgroundColor: t.bg,
+                    borderColor: active ? 'var(--paro-text-hi)' : 'transparent',
+                  }}
+                >
+                  <div
+                    className="absolute bottom-1 right-1 h-3 w-3 rounded-full"
+                    style={{ backgroundColor: t.accent }}
+                  />
+                </div>
+                <span className="font-pixel text-[8px] leading-tight text-dim text-center">{t.name}</span>
+              </button>
+            )
+          })}
         </div>
       </div>
 
       {/* Active group — members + invite */}
       {currentGroup && (
-        <div className="border-2 border-white/10 bg-slate-800/70 p-5 space-y-4">
+        <div className="border-2 border-def bg-card p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-pixel text-[10px] font-semibold uppercase tracking-wider text-slate-400">Active group</h3>
-            <span className="text-sm font-medium text-white">{currentGroup.name}</span>
+            <h3 className="font-pixel text-[10px] font-semibold uppercase tracking-wider text-dim">Active group</h3>
+            <span className="text-sm font-medium text-hi">{currentGroup.name}</span>
           </div>
 
           {/* Member list */}
           {groupMembers.length > 0 && (
             <ul className="space-y-2">
               {groupMembers.map((m) => (
-                <li key={m.userId} className="flex items-center gap-3 border-2 border-white/10 bg-slate-900/50 px-3 py-2.5">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-700 text-xs font-semibold text-slate-300">
+                <li key={m.userId} className="flex items-center gap-3 border-2 border-def bg-deep px-3 py-2.5">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-input text-xs font-semibold text-lo">
                     {m.name[0].toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-white truncate">
-                      {m.name}{m.isMe ? <span className="ml-1.5 text-xs text-slate-500">you</span> : null}
+                    <p className="text-sm font-medium text-hi truncate">
+                      {m.name}{m.isMe ? <span className="ml-1.5 text-xs text-faint">you</span> : null}
                     </p>
-                    <p className="text-xs text-slate-500 truncate">{m.email}</p>
+                    <p className="text-xs text-faint truncate">{m.email}</p>
                   </div>
-                  <span className="shrink-0 rounded-full border border-slate-600/60 px-2 py-0.5 text-[10px] uppercase tracking-wider text-slate-400">
+                  <span className="shrink-0 rounded-full border border-slate-600/60 px-2 py-0.5 text-[10px] uppercase tracking-wider text-dim">
                     {m.role}
                   </span>
                 </li>
@@ -253,16 +261,16 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
 
           {/* Invite helper */}
           <div>
-            <p className="mb-2 text-xs text-slate-400">Invite someone — share this group code</p>
+            <p className="mb-2 text-xs text-dim">Invite someone — share this group code</p>
             <div className="flex gap-2">
-              <div className="flex-1 border-2 border-white/10 bg-slate-900/60 px-3 py-2 font-mono text-sm text-slate-300 truncate">
+              <div className="flex-1 border-2 border-def bg-deep px-3 py-2 font-mono text-sm text-lo truncate">
                 {currentGroup.slug}
               </div>
               <button
                 type="button"
                 onClick={copySlug}
                 className={`shrink-0 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                  copied ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
+                  copied ? 'bg-emerald-600 text-hi' : 'bg-input text-lo hover:bg-slate-600'
                 }`}
               >
                 {copied ? 'Copied!' : 'Copy'}
@@ -273,23 +281,23 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
       )}
 
       {/* Groups list */}
-      <div className="border-2 border-white/10 bg-slate-800/70 p-5">
-        <h3 className="mb-4 font-pixel text-[10px] font-semibold uppercase tracking-wider text-slate-400">Your groups</h3>
+      <div className="border-2 border-def bg-card p-5">
+        <h3 className="mb-4 font-pixel text-[10px] font-semibold uppercase tracking-wider text-dim">Your groups</h3>
         {loadingGroups ? (
-          <p className="text-sm text-slate-400">Loading…</p>
+          <p className="text-sm text-dim">Loading…</p>
         ) : groups.length === 0 ? (
-          <p className="text-sm text-slate-400">No groups yet. Create or join one below.</p>
+          <p className="text-sm text-dim">No groups yet. Create or join one below.</p>
         ) : (
           <div className="space-y-3">
             {groups.map((group) => {
               const isOwner = group.owner_id === user.id
               const draftName = updates[group.id] ?? group.name
               return (
-                <div key={group.id} className="border-2 border-white/10 bg-slate-900/60 p-4">
+                <div key={group.id} className="border-2 border-def bg-deep p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <p className="text-sm font-semibold text-white truncate">{group.name}</p>
-                      <span className="shrink-0 rounded-full border border-slate-600/80 bg-slate-950/50 px-2 py-0.5 text-[10px] uppercase tracking-wider text-slate-400">
+                      <p className="text-sm font-semibold text-hi truncate">{group.name}</p>
+                      <span className="shrink-0 rounded-full border border-slate-600/80 bg-page/50 px-2 py-0.5 text-[10px] uppercase tracking-wider text-dim">
                         {isOwner ? 'Owner' : 'Member'}
                       </span>
                     </div>
@@ -298,7 +306,7 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
                         <button
                           type="button"
                           onClick={() => onGroupChange && onGroupChange(group)}
-                          className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white"
+                          className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-hi"
                         >
                           Set active
                         </button>
@@ -319,7 +327,7 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
                           type="button"
                           disabled={acting === group.id}
                           onClick={() => handleLeave(group)}
-                          className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-slate-400 disabled:opacity-50 hover:bg-slate-700 transition-colors"
+                          className="rounded-lg border border-def px-3 py-1.5 text-xs font-medium text-dim disabled:opacity-50 hover:bg-input transition-colors"
                         >
                           {acting === group.id ? '…' : 'Leave'}
                         </button>
@@ -331,14 +339,14 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
                       <input
                         value={draftName}
                         onChange={(e) => setUpdates((prev) => ({ ...prev, [group.id]: e.target.value }))}
-                        className="flex-1 rounded-none bg-slate-800 border-2 border-white/10 px-3 py-1.5 text-sm text-slate-100"
+                        className="flex-1 rounded-none bg-card border-2 border-def px-3 py-1.5 text-sm text-hi"
                         placeholder="Group name"
                       />
                       <button
                         type="button"
                         disabled={!updates[group.id] || updates[group.id].trim() === '' || updates[group.id] === group.name}
                         onClick={() => saveGroupName(group.id)}
-                        className="rounded-lg bg-accent-dark px-3 py-1.5 text-xs font-medium text-white disabled:opacity-40"
+                        className="rounded-lg bg-accent-dark px-3 py-1.5 text-xs font-medium text-hi disabled:opacity-40"
                       >
                         Save
                       </button>

@@ -3,42 +3,98 @@
 /* ── Theme tokens ─────────────────────────────── */
 :root,
 [data-theme="midnight"] {
+  /* backgrounds */
+  --paro-bg-page:      #020617;
+  --paro-bg-card:      rgb(30 41 59 / 0.75);
+  --paro-bg-deep:      rgb(2 6 23 / 0.6);
+  --paro-bg-input:     #1e293b;
+  /* text */
+  --paro-text-hi:      #f1f5f9;
+  --paro-text-lo:      #cbd5e1;
+  --paro-text-dim:     #94a3b8;
+  --paro-text-faint:   #64748b;
+  /* border + dot */
+  --paro-border:       rgb(255 255 255 / 0.10);
+  --paro-dot:          rgb(148 163 184 / 0.07);
+  /* accent */
   --paro-accent:       #0ea5e9;
   --paro-accent-dark:  #0284c7;
   --paro-accent-light: #38bdf8;
   --paro-accent-muted: #7dd3fc;
 }
-[data-theme="synthwave"] {
-  --paro-accent:       #8b5cf6;
-  --paro-accent-dark:  #7c3aed;
-  --paro-accent-light: #a78bfa;
-  --paro-accent-muted: #c4b5fd;
-}
-[data-theme="ember"] {
-  --paro-accent:       #f97316;
-  --paro-accent-dark:  #ea580c;
-  --paro-accent-light: #fb923c;
-  --paro-accent-muted: #fdba74;
-}
-[data-theme="rose"] {
-  --paro-accent:       #ec4899;
-  --paro-accent-dark:  #db2777;
-  --paro-accent-light: #f472b6;
-  --paro-accent-muted: #f9a8d4;
-}
-[data-theme="neon"] {
-  --paro-accent:       #06b6d4;
-  --paro-accent-dark:  #0891b2;
-  --paro-accent-light: #22d3ee;
-  --paro-accent-muted: #67e8f9;
+
+[data-theme="forest"] {
+  --paro-bg-page:      #0b0a05;
+  --paro-bg-card:      rgb(28 24 14 / 0.9);
+  --paro-bg-deep:      rgb(12 10 6 / 0.75);
+  --paro-bg-input:     #201c0c;
+  --paro-text-hi:      #f0ead8;
+  --paro-text-lo:      #c8bc96;
+  --paro-text-dim:     #8a7d58;
+  --paro-text-faint:   #5c5138;
+  --paro-border:       rgb(200 175 100 / 0.13);
+  --paro-dot:          rgb(200 175 100 / 0.05);
+  --paro-accent:       #22c55e;
+  --paro-accent-dark:  #16a34a;
+  --paro-accent-light: #4ade80;
+  --paro-accent-muted: #86efac;
 }
 
+[data-theme="ash"] {
+  --paro-bg-page:      #111111;
+  --paro-bg-card:      rgb(30 30 30 / 0.9);
+  --paro-bg-deep:      rgb(10 10 10 / 0.75);
+  --paro-bg-input:     #252525;
+  --paro-text-hi:      #e8e8e8;
+  --paro-text-lo:      #ababab;
+  --paro-text-dim:     #717171;
+  --paro-text-faint:   #4a4a4a;
+  --paro-border:       rgb(255 255 255 / 0.08);
+  --paro-dot:          rgb(255 255 255 / 0.04);
+  --paro-accent:       #6b7280;
+  --paro-accent-dark:  #4b5563;
+  --paro-accent-light: #9ca3af;
+  --paro-accent-muted: #d1d5db;
+}
+
+[data-theme="blackout"] {
+  --paro-bg-page:      #000000;
+  --paro-bg-card:      rgb(8 8 8 / 0.95);
+  --paro-bg-deep:      rgb(3 3 3 / 0.9);
+  --paro-bg-input:     #111111;
+  --paro-text-hi:      #ffffff;
+  --paro-text-lo:      #cccccc;
+  --paro-text-dim:     #888888;
+  --paro-text-faint:   #555555;
+  --paro-border:       rgb(255 255 255 / 0.06);
+  --paro-dot:          rgb(255 255 255 / 0.02);
+  --paro-accent:       #22c55e;
+  --paro-accent-dark:  #16a34a;
+  --paro-accent-light: #4ade80;
+  --paro-accent-muted: #86efac;
+}
+
+/* ── Color-role utilities ─────────────────────── */
+@utility bg-page    { background-color: var(--paro-bg-page); }
+@utility bg-card    { background-color: var(--paro-bg-card); }
+@utility bg-deep    { background-color: var(--paro-bg-deep); }
+@utility bg-input   { background-color: var(--paro-bg-input); }
+@utility bg-header  { background-color: color-mix(in srgb, var(--paro-bg-page) 88%, transparent); }
+@utility bg-nav     { background-color: color-mix(in srgb, var(--paro-bg-page) 97%, transparent); }
+
+@utility text-hi    { color: var(--paro-text-hi); }
+@utility text-lo    { color: var(--paro-text-lo); }
+@utility text-dim   { color: var(--paro-text-dim); }
+@utility text-faint { color: var(--paro-text-faint); }
+
+@utility border-def { border-color: var(--paro-border); }
+
 /* ── Accent utilities ─────────────────────────── */
-@utility bg-accent      { background-color: var(--paro-accent); }
-@utility bg-accent-dark { background-color: var(--paro-accent-dark); }
-@utility text-accent    { color: var(--paro-accent-light); }
+@utility bg-accent       { background-color: var(--paro-accent); }
+@utility bg-accent-dark  { background-color: var(--paro-accent-dark); }
+@utility text-accent     { color: var(--paro-accent-light); }
 @utility text-accent-muted { color: var(--paro-accent-muted); }
-@utility border-accent  { border-color: var(--paro-accent); }
+@utility border-accent   { border-color: var(--paro-accent); }
 
 :root {
   color-scheme: dark;
@@ -57,8 +113,8 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #020617;
-  background-image: radial-gradient(circle, rgba(148, 163, 184, 0.07) 1px, transparent 1px);
+  background-color: var(--paro-bg-page);
+  background-image: radial-gradient(circle, var(--paro-dot) 1px, transparent 1px);
   background-size: 20px 20px;
 }
 

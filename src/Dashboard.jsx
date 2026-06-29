@@ -99,9 +99,9 @@ export default function Dashboard({ user, supabase }) {
   const inSettings = tab === 'settings'
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100">
+    <div className="min-h-screen bg-page text-hi">
       <header
-        className="sticky top-0 z-40 border-b border-white/6 bg-slate-950/80 backdrop-blur-md px-4 sm:px-6"
+        className="sticky top-0 z-40 border-b border-def bg-header backdrop-blur-md px-4 sm:px-6"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between">
@@ -110,7 +110,7 @@ export default function Dashboard({ user, supabase }) {
             {inSettings ? (
               <button
                 onClick={() => setTab('monthly')}
-                className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors"
+                className="flex items-center gap-1.5 text-sm text-dim hover:text-hi transition-colors"
               >
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
                   <path fillRule="evenodd" d="M9.78 4.22a.75.75 0 010 1.06L7.06 8l2.72 2.72a.75.75 0 11-1.06 1.06L5.47 8.53a.75.75 0 010-1.06l3.25-3.25a.75.75 0 011.06 0z" clipRule="evenodd" />
@@ -121,7 +121,7 @@ export default function Dashboard({ user, supabase }) {
               <>
                 <h1 className="font-pixel shrink-0 text-lg font-semibold">Paro</h1>
                 {currentGroup ? (
-                  <span className="truncate bg-slate-800/70 px-2 py-1 text-xs text-slate-300 max-w-[130px] sm:max-w-xs">
+                  <span className="truncate bg-card px-2 py-1 text-xs text-lo max-w-[130px] sm:max-w-xs">
                     {currentGroup.name}
                   </span>
                 ) : null}
@@ -133,14 +133,14 @@ export default function Dashboard({ user, supabase }) {
           <div className="flex items-center gap-1">
             {!inSettings && (
               <nav className="hidden sm:flex items-center gap-1 mr-2">
-                <button onClick={() => setTab('monthly')} className={`font-pixel rounded-lg px-3 py-1.5 text-xs font-medium transition ${tab === 'monthly' ? 'bg-accent text-white' : 'text-slate-300 hover:text-white'}`}>Ledger</button>
-                <button onClick={() => setTab('balances')} className={`font-pixel rounded-lg px-3 py-1.5 text-xs font-medium transition ${tab === 'balances' ? 'bg-accent text-white' : 'text-slate-300 hover:text-white'}`}>Balances</button>
-                <span className="ml-2 max-w-[180px] truncate text-xs text-slate-400">{user.email}</span>
+                <button onClick={() => setTab('monthly')} className={`font-pixel rounded-lg px-3 py-1.5 text-xs font-medium transition ${tab === 'monthly' ? 'bg-accent text-hi' : 'text-lo hover:text-hi'}`}>Ledger</button>
+                <button onClick={() => setTab('balances')} className={`font-pixel rounded-lg px-3 py-1.5 text-xs font-medium transition ${tab === 'balances' ? 'bg-accent text-hi' : 'text-lo hover:text-hi'}`}>Balances</button>
+                <span className="ml-2 max-w-[180px] truncate text-xs text-dim">{user.email}</span>
               </nav>
             )}
             <button
               onClick={() => setTab(inSettings ? 'monthly' : 'settings')}
-              className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${inSettings ? 'bg-accent text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+              className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${inSettings ? 'bg-accent text-hi' : 'text-dim hover:bg-card hover:text-hi'}`}
               aria-label="Settings"
             >
               <GearIcon />
@@ -152,42 +152,42 @@ export default function Dashboard({ user, supabase }) {
       <main className="mx-auto max-w-6xl px-4 py-5 pb-24 sm:px-6 sm:py-6 sm:pb-10">
         {tab === 'monthly' ? (
           <div className="mb-6 space-y-4">
-            <div className="border-2 border-white/10 bg-slate-800/70 p-4 shadow-lg shadow-slate-950/30">
+            <div className="border-2 border-def bg-card p-4 shadow-lg shadow-slate-950/30">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
                   <p className="font-pixel text-xs font-medium text-accent-muted">At a glance</p>
-                  <h2 className="text-lg font-semibold text-white">{currentGroup?.name || 'Choose a group to begin'}</h2>
-                  <p className="text-sm text-slate-400">{totalTracked} entries tracked • {fixedCount} fixed • {variableCount} variable</p>
+                  <h2 className="text-lg font-semibold text-hi">{currentGroup?.name || 'Choose a group to begin'}</h2>
+                  <p className="text-sm text-dim">{totalTracked} entries tracked • {fixedCount} fixed • {variableCount} variable</p>
                 </div>
-                <div className="border-2 border-white/10 bg-slate-900/70 px-4 py-3 text-right">
-                  <p className="font-pixel text-[9px] uppercase tracking-[0.15em] text-slate-400">Current total</p>
-                  <p className="text-xl font-semibold text-white">${(totalAmount / 100).toFixed(2)}</p>
+                <div className="border-2 border-def bg-deep px-4 py-3 text-right">
+                  <p className="font-pixel text-[9px] uppercase tracking-[0.15em] text-dim">Current total</p>
+                  <p className="text-xl font-semibold text-hi">${(totalAmount / 100).toFixed(2)}</p>
                 </div>
               </div>
             </div>
 
-            <div className="border-2 border-white/10 bg-slate-800/70 p-4 shadow-lg shadow-slate-950/20">
+            <div className="border-2 border-def bg-card p-4 shadow-lg shadow-slate-950/20">
               <div className="mb-3 flex items-center justify-between">
-                <h3 className="font-pixel text-xs font-semibold text-white">Recent activity</h3>
-                <span className="text-xs text-slate-400">Latest updates</span>
+                <h3 className="font-pixel text-xs font-semibold text-hi">Recent activity</h3>
+                <span className="text-xs text-dim">Latest updates</span>
               </div>
               {recentActivity.length ? (
                 <ul className="space-y-2">
                   {recentActivity.map((entry) => (
-                    <li key={entry.id} className="flex items-center justify-between border-2 border-white/10 bg-slate-900/60 px-3 py-2">
+                    <li key={entry.id} className="flex items-center justify-between border-2 border-def bg-deep px-3 py-2">
                       <div>
-                        <p className="text-sm font-medium text-slate-100">{entry.description || 'Expense'}</p>
-                        <p className="text-xs text-slate-400">{entry.is_fixed ? 'Fixed' : 'Variable'} • {entry.category || 'Other'}</p>
+                        <p className="text-sm font-medium text-hi">{entry.description || 'Expense'}</p>
+                        <p className="text-xs text-dim">{entry.is_fixed ? 'Fixed' : 'Variable'} • {entry.category || 'Other'}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-semibold text-white">${(Number(entry.amount) / 100).toFixed(2)}</p>
-                        <p className="text-[11px] text-slate-400">{new Date(entry.date || entry.created_at).toLocaleDateString()}</p>
+                        <p className="text-sm font-semibold text-hi">${(Number(entry.amount) / 100).toFixed(2)}</p>
+                        <p className="text-[11px] text-dim">{new Date(entry.date || entry.created_at).toLocaleDateString()}</p>
                       </div>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-slate-400">No activity yet. Add your first expense using the + button.</p>
+                <p className="text-sm text-dim">No activity yet. Add your first expense using the + button.</p>
               )}
             </div>
           </div>
@@ -218,11 +218,11 @@ export default function Dashboard({ user, supabase }) {
       {/* Bottom tab bar — mobile only, 2 tabs */}
       {!inSettings && (
         <nav
-          className="fixed inset-x-0 bottom-0 z-40 flex border-t border-white/8 bg-slate-950/95 backdrop-blur-md sm:hidden"
+          className="fixed inset-x-0 bottom-0 z-40 flex border-t border-def bg-nav backdrop-blur-md sm:hidden"
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
-          <button onClick={() => setTab('monthly')} className={`font-pixel flex-1 py-3 text-xs font-medium border-t-2 transition-colors ${tab === 'monthly' ? 'border-accent text-accent' : 'border-transparent text-slate-500'}`}>Ledger</button>
-          <button onClick={() => setTab('balances')} className={`font-pixel flex-1 py-3 text-xs font-medium border-t-2 transition-colors ${tab === 'balances' ? 'border-accent text-accent' : 'border-transparent text-slate-500'}`}>Balances</button>
+          <button onClick={() => setTab('monthly')} className={`font-pixel flex-1 py-3 text-xs font-medium border-t-2 transition-colors ${tab === 'monthly' ? 'border-accent text-accent' : 'border-transparent text-faint'}`}>Ledger</button>
+          <button onClick={() => setTab('balances')} className={`font-pixel flex-1 py-3 text-xs font-medium border-t-2 transition-colors ${tab === 'balances' ? 'border-accent text-accent' : 'border-transparent text-faint'}`}>Balances</button>
         </nav>
       )}
 

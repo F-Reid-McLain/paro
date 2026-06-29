@@ -99,22 +99,22 @@ function App() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
+    <main className="min-h-screen bg-page text-hi">
       <div className="mx-auto flex min-h-screen max-w-6xl flex-col gap-10 px-6 py-12 lg:flex-row lg:items-center lg:justify-between lg:px-8">
         <section className="max-w-2xl space-y-6">
-          <span className="inline-flex rounded-full border border-white/20 bg-white/5 px-3 py-1 text-sm font-medium text-slate-300">
+          <span className="inline-flex rounded-full border border-white/20 bg-white/5 px-3 py-1 text-sm font-medium text-lo">
             Shared expenses, simplified
           </span>
           <div className="space-y-4">
-            <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+            <h1 className="text-4xl font-semibold tracking-tight text-hi sm:text-5xl">
               Keep household and group costs clear without the spreadsheet hassle.
             </h1>
-            <p className="max-w-xl text-lg text-slate-300">
+            <p className="max-w-xl text-lg text-lo">
               Paro brings together shared bills, recurring expenses, and monthly summaries in one calm place so everyone can stay on the same page.
             </p>
           </div>
 
-          <ul className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-slate-300 shadow-2xl shadow-slate-950/30">
+          <ul className="space-y-3 rounded-2xl border border-def bg-white/5 p-6 text-sm text-lo shadow-2xl shadow-slate-950/30">
             <li>• Create or join a shared group in seconds.</li>
             <li>• Track fixed bills and everyday spending together.</li>
             <li>• Review a monthly ledger that makes costs easy to understand.</li>
@@ -122,18 +122,18 @@ function App() {
           </ul>
         </section>
 
-        <section className="w-full max-w-md rounded-3xl border border-white/10 bg-slate-900/80 p-6 shadow-2xl shadow-slate-950/40 backdrop-blur">
-          <div className="mb-6 flex rounded-full border border-white/10 bg-slate-800/70 p-1">
+        <section className="w-full max-w-md rounded-3xl border border-def bg-deep p-6 shadow-2xl shadow-slate-950/40 backdrop-blur">
+          <div className="mb-6 flex rounded-full border border-def bg-card p-1">
             <button
               type="button"
-              className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition ${mode === 'signup' ? 'bg-accent text-white' : 'text-slate-300'}`}
+              className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition ${mode === 'signup' ? 'bg-accent text-hi' : 'text-lo'}`}
               onClick={() => setMode('signup')}
             >
               Create account
             </button>
             <button
               type="button"
-              className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition ${mode === 'signin' ? 'bg-accent text-white' : 'text-slate-300'}`}
+              className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition ${mode === 'signin' ? 'bg-accent text-hi' : 'text-lo'}`}
               onClick={() => setMode('signin')}
             >
               Sign in
@@ -147,7 +147,7 @@ function App() {
               </div>
               <button
                 type="button"
-                className="w-full rounded-2xl bg-slate-800 px-4 py-3 font-medium text-slate-100 transition hover:bg-slate-700"
+                className="w-full rounded-2xl bg-card px-4 py-3 font-medium text-hi transition hover:bg-input"
                 onClick={handleSignOut}
               >
                 Sign out
@@ -157,7 +157,7 @@ function App() {
             <form className="space-y-4" onSubmit={handleSubmit}>
               {mode === 'signup' ? (
                 <input
-                  className="w-full rounded-2xl border border-white/10 bg-slate-800 px-4 py-3 text-slate-100 outline-none ring-0 placeholder:text-slate-400"
+                  className="w-full rounded-2xl border border-def bg-card px-4 py-3 text-hi outline-none ring-0 placeholder:text-dim"
                   type="text"
                   placeholder="Your name"
                   value={fullName}
@@ -165,7 +165,7 @@ function App() {
                 />
               ) : null}
               <input
-                className="w-full rounded-2xl border border-white/10 bg-slate-800 px-4 py-3 text-slate-100 outline-none ring-0 placeholder:text-slate-400"
+                className="w-full rounded-2xl border border-def bg-card px-4 py-3 text-hi outline-none ring-0 placeholder:text-dim"
                 type="email"
                 placeholder="you@example.com"
                 value={email}
@@ -173,7 +173,7 @@ function App() {
                 required
               />
               <input
-                className="w-full rounded-2xl border border-white/10 bg-slate-800 px-4 py-3 text-slate-100 outline-none ring-0 placeholder:text-slate-400"
+                className="w-full rounded-2xl border border-def bg-card px-4 py-3 text-hi outline-none ring-0 placeholder:text-dim"
                 type="password"
                 placeholder="Password"
                 value={password}
@@ -183,14 +183,14 @@ function App() {
               <button
                 type="submit"
                 disabled={loading || !isSupabaseConfigured}
-                className="w-full rounded-2xl bg-accent px-4 py-3 font-medium text-white transition hover:bg-accent-dark disabled:cursor-not-allowed disabled:bg-slate-700"
+                className="w-full rounded-2xl bg-accent px-4 py-3 font-medium text-hi transition hover:bg-accent-dark disabled:cursor-not-allowed disabled:bg-input"
               >
                 {loading ? 'Working…' : mode === 'signup' ? 'Create account' : 'Sign in'}
               </button>
             </form>
           )}
 
-          {message ? <p className="mt-4 text-sm text-slate-300">{message}</p> : null}
+          {message ? <p className="mt-4 text-sm text-lo">{message}</p> : null}
           {!isSupabaseConfigured ? (
             <p className="mt-4 text-sm text-amber-300">{getSupabaseConfigMessage()}</p>
           ) : null}
