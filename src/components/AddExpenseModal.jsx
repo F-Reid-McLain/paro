@@ -62,6 +62,7 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
           start_date: startDate,
           end_date: endDate || null,
           currency: 'USD',
+          is_split: isSplit,
         }
         const created = await createFixedExpense(supabase, payload)
         onCreated && onCreated(created)
@@ -149,6 +150,10 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
                 <input type="date" className="w-full rounded bg-slate-800 px-3 py-2 text-slate-100" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
                 <input type="date" className="w-full rounded bg-slate-800 px-3 py-2 text-slate-100" value={endDate} onChange={(e) => setEndDate(e.target.value)} placeholder="End date (optional)" />
               </div>
+              <label className="flex items-center gap-2 text-sm text-slate-300">
+                <input type="checkbox" checked={isSplit} onChange={(e) => setIsSplit(e.target.checked)} />
+                Split evenly among group members
+              </label>
             </>
           ) : (
             <>

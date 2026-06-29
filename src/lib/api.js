@@ -152,6 +152,32 @@ export async function joinGroup(supabase, { slug, user_id }) {
   return group
 }
 
+export async function deleteExpense(supabase, expenseId) {
+  const { error } = await supabase.from('expenses').delete().eq('id', expenseId)
+  if (error) throw error
+}
+
+export async function deleteFixedExpense(supabase, fixedExpenseId) {
+  const { error } = await supabase.from('fixed_expenses').delete().eq('id', fixedExpenseId)
+  if (error) throw error
+}
+
+export async function fetchSplitFixedExpenses(supabase, groupId) {
+  const [{ data: fixedData, error: fErr }, { data: membersData, error: mErr }] = await Promise.all([
+    supabase.from('fixed_expenses').select('*').eq('group_id', groupId).eq('is_split', true),
+    supabase.from('group_members').select('user_id').eq('group_id', groupId),
+  ])
+  if (fErr) throw fErr
+  if (mErr) throw mErr
+
+  const memberCount = Math.max((membersData || []).length, 1)
+  return (fixedData || []).map((fe) => ({
+    ...fe,
+    myShare: Math.round(fe.amount / memberCount),
+    memberCount,
+  }))
+}
+
 export async function leaveGroup(supabase, { groupId, userId }) {
   const { error } = await supabase
     .from('group_members')

@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { fetchGroupBalances, fetchMyUnsettledShares, settleExpenseShare, settleUp } from '../lib/api'
+import { fetchGroupBalances, fetchMyUnsettledShares, fetchSplitFixedExpenses, settleExpenseShare, settleUp } from '../lib/api'
 
 export default function Balances({ supabase, user, currentGroup, members, onRefresh }) {
   const [balances, setBalances] = useState({})
   const [myShares, setMyShares] = useState([])
+  const [splitFixed, setSplitFixed] = useState([])
   const [loading, setLoading] = useState(false)
   const [settling, setSettling] = useState(null)
   const [settlingShare, setSettlingShare] = useState(null)
@@ -12,12 +13,14 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
     if (!currentGroup?.id) return
     setLoading(true)
     try {
-      const [balanceResult, sharesResult] = await Promise.all([
+      const [balanceResult, sharesResult, fixedResult] = await Promise.all([
         fetchGroupBalances(supabase, { groupId: currentGroup.id, currentUserId: user.id }),
         fetchMyUnsettledShares(supabase, { groupId: currentGroup.id, userId: user.id }),
+        fetchSplitFixedExpenses(supabase, currentGroup.id),
       ])
       setBalances(balanceResult)
       setMyShares(sharesResult)
+      setSplitFixed(fixedResult)
     } catch (e) {
       console.error('fetch balances', e)
     } finally {
@@ -115,6 +118,30 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
           )}
         </div>
       </div>
+
+      {/* Recurring splits */}
+      {currentGroup && !loading && splitFixed.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold text-white">Recurring splits</h3>
+          <p className="mt-1 text-sm text-slate-300">Fixed expenses shared evenly among all group members.</p>
+          <ul className="mt-4 space-y-2">
+            {splitFixed.map((fe) => (
+              <li key={fe.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-800/70 px-4 py-3">
+                <div>
+                  <p className="font-medium text-white">{fe.name}</p>
+                  <p className="mt-0.5 text-xs text-slate-400">
+                    {fe.period} • {fe.memberCount} members • total ${(fe.amount / 100).toFixed(2)}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-white">${(fe.myShare / 100).toFixed(2)}</p>
+                  <p className="text-xs text-slate-400">your share</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Your unsettled shares */}
       {currentGroup && !loading && (

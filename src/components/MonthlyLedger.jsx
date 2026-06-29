@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchUserExpenseShares, settleExpenseShare } from '../lib/api'
 
-export default function MonthlyLedger({ expenses = [], loading = false, supabase, user, onRefresh, members = {} }) {
+export default function MonthlyLedger({ expenses = [], loading = false, supabase, user, onRefresh, onDelete, members = {} }) {
   const [userShares, setUserShares] = useState([])
   const [settlingShareId, setSettlingShareId] = useState(null)
 
@@ -135,14 +135,16 @@ export default function MonthlyLedger({ expenses = [], loading = false, supabase
                         <ul className="space-y-2">
                           {entries.map((e) => {
                             const share = userShares.find((entry) => entry.expense_id === e.id)
+                            const canDelete = e.is_fixed || e.payer_id === user.id
 
                             return (
-                              <li key={e.id} className="flex items-center justify-between rounded-xl border border-white/10 bg-slate-900/50 p-2.5">
-                                <div>
+                              <li key={e.id} className="flex items-center gap-2 rounded-xl border border-white/10 bg-slate-900/50 p-2.5">
+                                <div className="min-w-0 flex-1">
                                   <div className="text-sm font-medium text-white">{e.description || 'Expense'}</div>
                                   <div className="text-xs text-slate-400">
                                     {new Date(e.date || e.created_at).toLocaleDateString()}
                                     {e.is_split ? ' • Split' : ''}
+                                    {e.period ? ` • ${e.period}` : ''}
                                     {e.payer_id ? (
                                       e.payer_id === user.id
                                         ? ' • You paid'
@@ -150,7 +152,7 @@ export default function MonthlyLedger({ expenses = [], loading = false, supabase
                                     ) : null}
                                   </div>
                                 </div>
-                                <div className="text-right">
+                                <div className="shrink-0 text-right">
                                   <div className="text-sm font-medium text-white">${(e.amount / 100).toFixed(2)}</div>
                                   {share ? (
                                     share.settled ? (
@@ -169,6 +171,20 @@ export default function MonthlyLedger({ expenses = [], loading = false, supabase
                                     <div className="text-xs text-amber-300">Pending split</div>
                                   ) : null}
                                 </div>
+                                {canDelete && onDelete ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (window.confirm(`Remove "${e.description || 'this expense'}"?`)) {
+                                        onDelete(e.id, e.is_fixed)
+                                      }
+                                    }}
+                                    className="shrink-0 rounded px-1.5 py-1 text-xs text-slate-500 hover:bg-red-500/15 hover:text-red-400 transition-colors"
+                                    title="Remove"
+                                  >
+                                    ✕
+                                  </button>
+                                ) : null}
                               </li>
                             )
                           })}

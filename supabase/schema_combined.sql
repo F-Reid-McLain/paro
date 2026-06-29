@@ -227,6 +227,17 @@ for select using (
   )
 );
 
+-- Allow fixed expenses to be split among group members
+alter table public.fixed_expenses add column if not exists is_split boolean default false;
+
+-- Allow any group member to delete fixed expenses (they're shared group items)
+drop policy if exists "Members can delete fixed expenses" on public.fixed_expenses;
+create policy "Members can delete fixed expenses" on public.fixed_expenses
+for delete using (
+  exists (select 1 from public.group_members gm where gm.group_id = group_id and gm.user_id = auth.uid())
+  or exists (select 1 from public.groups g where g.id = group_id and g.owner_id = auth.uid())
+);
+
 -- Allow members to remove themselves from a group (leave)
 drop policy if exists "Members can leave groups" on public.group_members;
 create policy "Members can leave groups" on public.group_members

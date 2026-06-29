@@ -4,7 +4,7 @@ import Balances from './components/Balances'
 import Settings from './components/Settings'
 import AddExpenseModal from './components/AddExpenseModal'
 import FloatingButton from './components/FloatingButton'
-import { fetchExpenses, getUserGroups, getMemberProfiles } from './lib/api'
+import { fetchExpenses, getUserGroups, getMemberProfiles, deleteExpense, deleteFixedExpense } from './lib/api'
 
 export default function Dashboard({ user, supabase }) {
   const [tab, setTab] = useState('monthly')
@@ -47,6 +47,8 @@ export default function Dashboard({ user, supabase }) {
         amount: item.amount,
         date: item.start_date || item.created_at,
         is_fixed: true,
+        is_split: item.is_split || false,
+        period: item.period,
         category: 'Fixed',
         created_at: item.created_at,
       }))
@@ -57,6 +59,20 @@ export default function Dashboard({ user, supabase }) {
       console.error('fetch dashboard data', e)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleDelete(id, isFixed) {
+    try {
+      if (isFixed) {
+        await deleteFixedExpense(supabase, id)
+      } else {
+        await deleteExpense(supabase, id)
+      }
+      loadDashboardData(currentGroup?.id)
+    } catch (e) {
+      console.error('delete expense', e)
+      alert(e.message || 'Failed to delete')
     }
   }
 
@@ -156,7 +172,7 @@ export default function Dashboard({ user, supabase }) {
         ) : tab === 'balances' ? (
           <Balances supabase={supabase} user={user} currentGroup={currentGroup} members={members} onRefresh={() => loadDashboardData(currentGroup?.id)} />
         ) : (
-          <MonthlyLedger supabase={supabase} user={user} expenses={[...expenses, ...fixedExpenses]} loading={loading} members={members} onRefresh={() => loadDashboardData(currentGroup?.id)} />
+          <MonthlyLedger supabase={supabase} user={user} expenses={[...expenses, ...fixedExpenses]} loading={loading} members={members} onRefresh={() => loadDashboardData(currentGroup?.id)} onDelete={handleDelete} />
         )}
       </main>
 
