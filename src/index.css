@@ -27,3 +27,13 @@ body {
 #root {
   min-height: 100vh;
 }
+
+/* FAB sits 2rem from bottom on desktop, above mobile nav + home indicator */
+:root {
+  --fab-bottom: 2rem;
+}
+@media (max-width: 639px) {
+  :root {
+    --fab-bottom: calc(3.75rem + env(safe-area-inset-bottom) + 0.75rem);
+  }
+}

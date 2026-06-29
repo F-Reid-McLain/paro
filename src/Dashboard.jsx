@@ -75,31 +75,41 @@ export default function Dashboard({ user, supabase }) {
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100">
-      <header className="border-b border-white/6 bg-slate-950/60 px-6 py-4">
-          <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className="text-xl font-semibold">Paro</h1>
-            <nav className="flex gap-2">
-              <button onClick={() => setTab('monthly')} className={`px-3 py-2 rounded ${tab==='monthly' ? 'bg-sky-500 text-white' : 'text-slate-300'}`}>Monthly Ledger</button>
-            </nav>
+      {/* Header — padded for iPhone notch/Dynamic Island */}
+      <header
+        className="sticky top-0 z-40 border-b border-white/6 bg-slate-950/80 backdrop-blur-md px-4 sm:px-6"
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}
+      >
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            <h1 className="shrink-0 text-lg font-semibold">Paro</h1>
             {currentGroup ? (
-              <div className="ml-4 rounded-md bg-slate-800/60 px-3 py-1 text-sm text-slate-200">Group: <span className="font-medium">{currentGroup.name}</span></div>
+              <span className="truncate rounded-md bg-slate-800/70 px-2 py-1 text-xs text-slate-300 max-w-[130px] sm:max-w-xs">
+                {currentGroup.name}
+              </span>
             ) : null}
           </div>
-          <div className="flex items-center gap-3 text-sm text-slate-300">
+          {/* Desktop nav — hidden on mobile (bottom tab bar handles it) */}
+          <nav className="hidden sm:flex items-center gap-1">
+            <button
+              onClick={() => setTab('monthly')}
+              className={`rounded px-3 py-1.5 text-sm font-medium transition ${tab === 'monthly' ? 'bg-sky-500 text-white' : 'text-slate-300 hover:text-white'}`}
+            >
+              Ledger
+            </button>
             <button
               type="button"
               onClick={() => setTab('settings')}
-              className={`rounded px-3 py-2 text-sm font-medium transition ${tab === 'settings' ? 'bg-sky-500 text-white' : 'text-slate-300'}`}
+              className={`rounded px-3 py-1.5 text-sm font-medium transition ${tab === 'settings' ? 'bg-sky-500 text-white' : 'text-slate-300 hover:text-white'}`}
             >
               Settings
             </button>
-            <div>Signed in as <span className="font-medium">{user.email}</span></div>
-          </div>
+            <span className="ml-3 max-w-[180px] truncate text-xs text-slate-400">{user.email}</span>
+          </nav>
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl p-6">
+      <main className="mx-auto max-w-6xl px-4 py-5 pb-24 sm:px-6 sm:py-6 sm:pb-10">
         {tab !== 'settings' ? (
           <div className="mb-6 space-y-4">
             <div className="rounded-2xl border border-white/10 bg-slate-800/70 p-4 shadow-lg shadow-slate-950/30">
@@ -149,6 +159,25 @@ export default function Dashboard({ user, supabase }) {
           <MonthlyLedger supabase={supabase} user={user} expenses={[...expenses, ...fixedExpenses]} loading={loading} onRefresh={() => loadDashboardData(currentGroup?.id)} />
         )}
       </main>
+
+      {/* Bottom tab bar — mobile only */}
+      <nav
+        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-white/8 bg-slate-950/95 backdrop-blur-md sm:hidden"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
+        <button
+          onClick={() => setTab('monthly')}
+          className={`flex-1 py-3 text-sm font-medium border-t-2 transition-colors ${tab === 'monthly' ? 'border-sky-500 text-sky-400' : 'border-transparent text-slate-500'}`}
+        >
+          Ledger
+        </button>
+        <button
+          onClick={() => setTab('settings')}
+          className={`flex-1 py-3 text-sm font-medium border-t-2 transition-colors ${tab === 'settings' ? 'border-sky-500 text-sky-400' : 'border-transparent text-slate-500'}`}
+        >
+          Settings
+        </button>
+      </nav>
 
       <AddExpenseModal open={openAdd} onClose={() => setOpenAdd(false)} supabase={supabase} user={user} currentGroup={currentGroup} onCreated={(created) => loadDashboardData(currentGroup?.id || created?.group_id)} />
       <FloatingButton onClick={() => setOpenAdd(true)} />
