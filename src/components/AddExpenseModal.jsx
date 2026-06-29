@@ -18,6 +18,8 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
   const [groups, setGroups] = useState([])
   const [groupId, setGroupId] = useState('')
   const [creatingGroup, setCreatingGroup] = useState(false)
+  const [availableMembers, setAvailableMembers] = useState([])
+  const [splitWith, setSplitWith] = useState([])
 
   useEffect(() => {
     let mounted = true
@@ -39,6 +41,35 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
   useEffect(() => {
     if (currentGroup) setGroupId(currentGroup.id)
   }, [currentGroup])
+
+  // Load group members when split is toggled on in expense mode
+  useEffect(() => {
+    if (!isSplit || mode !== 'expense' || !groupId) {
+      setAvailableMembers([])
+      setSplitWith([])
+      return
+    }
+    let mounted = true
+    async function loadMembers() {
+      try {
+        const { data: memberRows } = await supabase.from('group_members').select('user_id').eq('group_id', groupId)
+        const userIds = (memberRows || []).map((m) => m.user_id).filter((id) => id !== user?.id)
+        if (!userIds.length) { if (mounted) { setAvailableMembers([]); setSplitWith([]) } return }
+        const { data: profiles } = await supabase.from('profiles').select('id, full_name, email').in('id', userIds)
+        if (!mounted) return
+        const members = (profiles || []).map((p) => ({
+          id: p.id,
+          name: p.full_name || p.email?.split('@')[0] || 'Member',
+        }))
+        setAvailableMembers(members)
+        setSplitWith(members.map((m) => m.id))
+      } catch (e) {
+        console.error('load members for split', e)
+      }
+    }
+    loadMembers()
+    return () => { mounted = false }
+  }, [isSplit, mode, groupId])
 
   async function handleSave() {
     const parsed = parseFloat(amount)
@@ -75,6 +106,7 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
           category: category || null,
           date: expenseDate,
           is_split: isSplit,
+          splitWith: isSplit && splitWith.length ? splitWith : undefined,
         }
         const created = await createExpense(supabase, expense, [])
         onCreated && onCreated(created)
@@ -174,6 +206,25 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
                 <input type="checkbox" checked={isSplit} onChange={(e) => setIsSplit(e.target.checked)} />
                 Split cost
               </label>
+              {isSplit && availableMembers.length > 0 && (
+                <div className="rounded-xl border border-white/10 bg-slate-900/60 p-3 space-y-2">
+                  <p className="text-xs text-slate-400">Split with (you + selected):</p>
+                  {availableMembers.map((m) => (
+                    <label key={m.id} className="flex items-center gap-2 text-sm text-slate-200">
+                      <input
+                        type="checkbox"
+                        checked={splitWith.includes(m.id)}
+                        onChange={(e) => {
+                          setSplitWith((prev) =>
+                            e.target.checked ? [...prev, m.id] : prev.filter((id) => id !== m.id)
+                          )
+                        }}
+                      />
+                      {m.name}
+                    </label>
+                  ))}
+                </div>
+              )}
             </>
           )}
 

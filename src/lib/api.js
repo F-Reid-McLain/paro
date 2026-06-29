@@ -56,18 +56,26 @@ export async function createExpense(supabase, expense, shares = []) {
   }
   if (normalizedExpense.occurred_at) delete normalizedExpense.occurred_at
 
-  // Insert expense, then insert shares
-  const { data: expData, error: expError } = await supabase.from('expenses').insert(normalizedExpense).select().single()
+  // Strip client-only fields before inserting
+  const { splitWith: splitWithIds, ...expenseToInsert } = normalizedExpense
+
+  const { data: expData, error: expError } = await supabase.from('expenses').insert(expenseToInsert).select().single()
   if (expError) throw expError
 
-  if (normalizedExpense.is_split) {
-    const { data: membersData, error: membersError } = await supabase.from('group_members').select('user_id').eq('group_id', expense.group_id)
-    if (membersError) throw membersError
+  if (expenseToInsert.is_split) {
+    let otherMembers
+    if (splitWithIds && splitWithIds.length > 0) {
+      otherMembers = splitWithIds.filter((id) => id !== payerId)
+    } else {
+      const { data: membersData, error: membersError } = await supabase.from('group_members').select('user_id').eq('group_id', expense.group_id)
+      if (membersError) throw membersError
+      const memberIds = (membersData || []).map((m) => m.user_id).filter(Boolean)
+      otherMembers = memberIds.filter((id) => id !== payerId)
+    }
 
-    const memberIds = (membersData || []).map((m) => m.user_id).filter(Boolean)
-    const otherMembers = memberIds.filter((id) => id !== payerId)
     const totalMembers = otherMembers.length + 1
-    const shareAmount = Math.round((Number(expense.amount) || 0) / totalMembers)
+    // Math.floor so shares never sum to more than the total; payer absorbs the remainder
+    const shareAmount = Math.floor((Number(expense.amount) || 0) / totalMembers)
 
     if (otherMembers.length) {
       const prepared = otherMembers.map((userId) => ({
@@ -162,7 +170,7 @@ export async function deleteFixedExpense(supabase, fixedExpenseId) {
   if (error) throw error
 }
 
-export async function fetchSplitFixedExpenses(supabase, groupId) {
+export async function fetchSplitFixedExpenses(supabase, { groupId, userId }) {
   const [{ data: fixedData, error: fErr }, { data: membersData, error: mErr }] = await Promise.all([
     supabase.from('fixed_expenses').select('*').eq('group_id', groupId).eq('is_split', true),
     supabase.from('group_members').select('user_id').eq('group_id', groupId),
@@ -170,11 +178,30 @@ export async function fetchSplitFixedExpenses(supabase, groupId) {
   if (fErr) throw fErr
   if (mErr) throw mErr
 
+  if (!fixedData?.length) return []
+
+  const fixedIds = fixedData.map((fe) => fe.id)
+  const { data: pmtData, error: pmtErr } = await supabase
+    .from('fixed_expense_payments')
+    .select('fixed_expense_id, period_label')
+    .in('fixed_expense_id', fixedIds)
+    .eq('user_id', userId)
+  if (pmtErr) throw pmtErr
+
+  const paidSet = new Set((pmtData || []).map((p) => `${p.fixed_expense_id}:${p.period_label}`))
+
   const memberCount = Math.max((membersData || []).length, 1)
-  return (fixedData || []).map((fe) => ({
+
+  // Current period label: "June 2026"
+  const now = new Date()
+  const currentPeriodLabel = now.toLocaleString('default', { month: 'long', year: 'numeric' })
+
+  return fixedData.map((fe) => ({
     ...fe,
-    myShare: Math.round(fe.amount / memberCount),
+    myShare: Math.floor(fe.amount / memberCount),
     memberCount,
+    currentPeriodLabel,
+    paidThisPeriod: paidSet.has(`${fe.id}:${currentPeriodLabel}`),
   }))
 }
 
@@ -253,34 +280,72 @@ export async function fetchGroupBalances(supabase, { groupId, currentUserId }) {
     .select('id, payer_id')
     .eq('group_id', groupId)
   if (expErr) throw expErr
-  if (!expenses?.length) return {}
-
-  const expenseIds = expenses.map((e) => e.id)
-  const payerByExpense = Object.fromEntries(expenses.map((e) => [e.id, e.payer_id]))
-
-  const { data: shares, error: sharesErr } = await supabase
-    .from('expense_shares')
-    .select('expense_id, user_id, amount')
-    .in('expense_id', expenseIds)
-    .eq('settled', false)
-  if (sharesErr) throw sharesErr
 
   const balances = {}
-  for (const share of shares || []) {
-    const debtorId = share.user_id
-    const creditorId = payerByExpense[share.expense_id]
-    const amount = Number(share.amount)
 
-    if (debtorId === currentUserId) {
-      // I owe this person
-      balances[creditorId] = (balances[creditorId] || 0) - amount
-    } else if (creditorId === currentUserId) {
-      // This person owes me
-      balances[debtorId] = (balances[debtorId] || 0) + amount
+  if (expenses?.length) {
+    const expenseIds = expenses.map((e) => e.id)
+    const payerByExpense = Object.fromEntries(expenses.map((e) => [e.id, e.payer_id]))
+
+    const { data: shares, error: sharesErr } = await supabase
+      .from('expense_shares')
+      .select('expense_id, user_id, amount')
+      .in('expense_id', expenseIds)
+      .eq('settled', false)
+    if (sharesErr) throw sharesErr
+
+    for (const share of shares || []) {
+      const debtorId = share.user_id
+      const creditorId = payerByExpense[share.expense_id]
+      const amount = Number(share.amount)
+
+      if (debtorId === currentUserId) {
+        balances[creditorId] = (balances[creditorId] || 0) - amount
+      } else if (creditorId === currentUserId) {
+        balances[debtorId] = (balances[debtorId] || 0) + amount
+      }
+    }
+  }
+
+  // Adjust balances for cash payments recorded in the group
+  const { data: payments, error: pmtErr } = await supabase
+    .from('payments')
+    .select('payer_id, payee_id, amount')
+    .eq('group_id', groupId)
+  if (pmtErr) throw pmtErr
+
+  for (const pmt of payments || []) {
+    const amount = Number(pmt.amount)
+    if (pmt.payer_id === currentUserId) {
+      // I paid someone — reduces what I owe them (or increases what they owe me)
+      balances[pmt.payee_id] = (balances[pmt.payee_id] || 0) + amount
+    } else if (pmt.payee_id === currentUserId) {
+      // Someone paid me — reduces what they owe me
+      balances[pmt.payer_id] = (balances[pmt.payer_id] || 0) - amount
     }
   }
 
   return balances
+}
+
+export async function recordPayment(supabase, { groupId, payerId, payeeId, amount, note }) {
+  const { data, error } = await supabase
+    .from('payments')
+    .insert({ group_id: groupId, payer_id: payerId, payee_id: payeeId, amount, note: note || null })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function recordFixedExpensePayment(supabase, { fixedExpenseId, userId, periodLabel, amount }) {
+  const { data, error } = await supabase
+    .from('fixed_expense_payments')
+    .insert({ fixed_expense_id: fixedExpenseId, user_id: userId, period_label: periodLabel, amount })
+    .select()
+    .single()
+  if (error) throw error
+  return data
 }
 
 export async function settleUp(supabase, { groupId, withUserId, currentUserId }) {

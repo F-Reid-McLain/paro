@@ -227,6 +227,62 @@ for select using (
   )
 );
 
+-- Payments: cash transfers between members (partial or full settlement)
+create table if not exists public.payments (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references public.groups(id) on delete cascade,
+  payer_id uuid not null references auth.users(id) on delete cascade,
+  payee_id uuid not null references auth.users(id) on delete cascade,
+  amount numeric not null check (amount > 0),
+  note text,
+  created_at timestamptz default now()
+);
+
+alter table public.payments enable row level security;
+
+drop policy if exists "Group members can view payments" on public.payments;
+create policy "Group members can view payments" on public.payments
+for select using (
+  exists (select 1 from public.group_members gm where gm.group_id = group_id and gm.user_id = auth.uid())
+  or exists (select 1 from public.groups g where g.id = group_id and g.owner_id = auth.uid())
+);
+
+drop policy if exists "Members can record payments" on public.payments;
+create policy "Members can record payments" on public.payments
+for insert with check (
+  (auth.uid() = payer_id or auth.uid() = payee_id) and (
+    exists (select 1 from public.group_members gm where gm.group_id = group_id and gm.user_id = auth.uid())
+    or exists (select 1 from public.groups g where g.id = group_id and g.owner_id = auth.uid())
+  )
+);
+
+-- Fixed expense period payments: track which periods each member has paid
+create table if not exists public.fixed_expense_payments (
+  id uuid primary key default gen_random_uuid(),
+  fixed_expense_id uuid not null references public.fixed_expenses(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  period_label text not null,
+  amount numeric not null,
+  created_at timestamptz default now(),
+  unique (fixed_expense_id, user_id, period_label)
+);
+
+alter table public.fixed_expense_payments enable row level security;
+
+drop policy if exists "Members can view fixed expense payments" on public.fixed_expense_payments;
+create policy "Members can view fixed expense payments" on public.fixed_expense_payments
+for select using (
+  exists (
+    select 1 from public.fixed_expenses fe
+    join public.group_members gm on gm.group_id = fe.group_id
+    where fe.id = fixed_expense_id and gm.user_id = auth.uid()
+  )
+);
+
+drop policy if exists "Members can record fixed expense payments" on public.fixed_expense_payments;
+create policy "Members can record fixed expense payments" on public.fixed_expense_payments
+for insert with check (auth.uid() = user_id);
+
 -- Allow fixed expenses to be split among group members
 alter table public.fixed_expenses add column if not exists is_split boolean default false;
 

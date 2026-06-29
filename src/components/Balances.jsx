@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { fetchGroupBalances, fetchMyUnsettledShares, fetchSplitFixedExpenses, settleExpenseShare, settleUp } from '../lib/api'
+import { fetchGroupBalances, fetchMyUnsettledShares, fetchSplitFixedExpenses, settleExpenseShare, settleUp, recordPayment, recordFixedExpensePayment } from '../lib/api'
 
 export default function Balances({ supabase, user, currentGroup, members, onRefresh }) {
   const [balances, setBalances] = useState({})
@@ -8,6 +8,13 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
   const [loading, setLoading] = useState(false)
   const [settling, setSettling] = useState(null)
   const [settlingShare, setSettlingShare] = useState(null)
+  // Payment recording: which userId we're recording a payment to/from, plus form state
+  const [recordingPaymentFor, setRecordingPaymentFor] = useState(null)
+  const [paymentAmount, setPaymentAmount] = useState('')
+  const [paymentNote, setPaymentNote] = useState('')
+  const [savingPayment, setSavingPayment] = useState(false)
+  // Fixed expense period marking
+  const [markingFixed, setMarkingFixed] = useState(new Set())
 
   async function load() {
     if (!currentGroup?.id) return
@@ -16,7 +23,7 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
       const [balanceResult, sharesResult, fixedResult] = await Promise.all([
         fetchGroupBalances(supabase, { groupId: currentGroup.id, currentUserId: user.id }),
         fetchMyUnsettledShares(supabase, { groupId: currentGroup.id, userId: user.id }),
-        fetchSplitFixedExpenses(supabase, currentGroup.id),
+        fetchSplitFixedExpenses(supabase, { groupId: currentGroup.id, userId: user.id }),
       ])
       setBalances(balanceResult)
       setMyShares(sharesResult)
@@ -58,9 +65,62 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
     }
   }
 
+  async function handleRecordPayment(withUserId, netAmount) {
+    const parsed = parseFloat(paymentAmount)
+    if (Number.isNaN(parsed) || parsed <= 0) {
+      alert('Enter a valid payment amount')
+      return
+    }
+    setSavingPayment(true)
+    try {
+      // netAmount < 0 means I owe them → I'm the payer; netAmount > 0 means they owe me → they're the payer
+      const amountCents = Math.round(parsed * 100)
+      const payerId = netAmount < 0 ? user.id : withUserId
+      const payeeId = netAmount < 0 ? withUserId : user.id
+      await recordPayment(supabase, {
+        groupId: currentGroup.id,
+        payerId,
+        payeeId,
+        amount: amountCents,
+        note: paymentNote.trim() || null,
+      })
+      setRecordingPaymentFor(null)
+      setPaymentAmount('')
+      setPaymentNote('')
+      await load()
+    } catch (e) {
+      console.error('record payment', e)
+      alert(e.message || 'Failed to record payment')
+    } finally {
+      setSavingPayment(false)
+    }
+  }
+
+  async function handleMarkFixedPaid(fe) {
+    setMarkingFixed((prev) => new Set([...prev, fe.id]))
+    try {
+      await recordFixedExpensePayment(supabase, {
+        fixedExpenseId: fe.id,
+        userId: user.id,
+        periodLabel: fe.currentPeriodLabel,
+        amount: fe.myShare,
+      })
+      await load()
+    } catch (e) {
+      console.error('mark fixed paid', e)
+      // unique constraint violation just means already paid
+      if (e.code !== '23505' && !e.message?.includes('duplicate')) {
+        alert(e.message || 'Failed to mark as paid')
+      } else {
+        await load()
+      }
+    } finally {
+      setMarkingFixed((prev) => { const s = new Set(prev); s.delete(fe.id); return s })
+    }
+  }
+
   const balanceEntries = Object.entries(balances).filter(([, amount]) => amount !== 0)
 
-  // Group my shares by payer
   const sharesByPayer = myShares.reduce((acc, item) => {
     const payerId = item.expense?.payer_id
     if (!payerId) return acc
@@ -95,22 +155,72 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
                 const name = members[userId]?.name || 'Group member'
                 const youOwe = netAmount < 0
                 const absAmount = Math.abs(netAmount)
+                const isRecording = recordingPaymentFor === userId
                 return (
-                  <li key={userId} className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-800/70 px-4 py-4">
-                    <div>
-                      <p className="font-medium text-white">{name}</p>
-                      <p className={`mt-0.5 text-sm font-medium ${youOwe ? 'text-amber-300' : 'text-emerald-300'}`}>
-                        {youOwe ? `You owe $${(absAmount / 100).toFixed(2)}` : `Owes you $${(absAmount / 100).toFixed(2)}`}
-                      </p>
+                  <li key={userId} className="rounded-2xl border border-white/10 bg-slate-800/70 px-4 py-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-white">{name}</p>
+                        <p className={`mt-0.5 text-sm font-medium ${youOwe ? 'text-amber-300' : 'text-emerald-300'}`}>
+                          {youOwe ? `You owe $${(absAmount / 100).toFixed(2)}` : `Owes you $${(absAmount / 100).toFixed(2)}`}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRecordingPaymentFor(isRecording ? null : userId)
+                            setPaymentAmount('')
+                            setPaymentNote('')
+                          }}
+                          className="rounded-xl border border-white/10 px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700"
+                        >
+                          {isRecording ? 'Cancel' : 'Record payment'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSettleUp(userId)}
+                          disabled={settling === userId}
+                          className="rounded-xl bg-sky-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+                        >
+                          {settling === userId ? 'Settling…' : 'Settle up'}
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleSettleUp(userId)}
-                      disabled={settling === userId}
-                      className="rounded-xl bg-sky-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
-                    >
-                      {settling === userId ? 'Settling…' : 'Settle up'}
-                    </button>
+
+                    {isRecording && (
+                      <div className="mt-3 rounded-xl border border-white/10 bg-slate-900/60 p-3 space-y-2">
+                        <p className="text-xs text-slate-400">
+                          {youOwe ? `Record a payment you made to ${name}` : `Record a payment ${name} made to you`}
+                        </p>
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            step="0.01"
+                            placeholder="Amount ($)"
+                            value={paymentAmount}
+                            onChange={(e) => setPaymentAmount(e.target.value)}
+                            className="flex-1 rounded bg-slate-800 px-3 py-2 text-sm text-slate-100"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Note (optional)"
+                            value={paymentNote}
+                            onChange={(e) => setPaymentNote(e.target.value)}
+                            className="flex-1 rounded bg-slate-800 px-3 py-2 text-sm text-slate-100"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          disabled={savingPayment}
+                          onClick={() => handleRecordPayment(userId, netAmount)}
+                          className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+                        >
+                          {savingPayment ? 'Saving…' : 'Save payment'}
+                        </button>
+                      </div>
+                    )}
                   </li>
                 )
               })}
@@ -126,16 +236,34 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
           <p className="mt-1 text-sm text-slate-300">Fixed expenses shared evenly among all group members.</p>
           <ul className="mt-4 space-y-2">
             {splitFixed.map((fe) => (
-              <li key={fe.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-800/70 px-4 py-3">
-                <div>
-                  <p className="font-medium text-white">{fe.name}</p>
-                  <p className="mt-0.5 text-xs text-slate-400">
-                    {fe.period} • {fe.memberCount} members • total ${(fe.amount / 100).toFixed(2)}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-white">${(fe.myShare / 100).toFixed(2)}</p>
-                  <p className="text-xs text-slate-400">your share</p>
+              <li key={fe.id} className="rounded-2xl border border-white/10 bg-slate-800/70 px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-white">{fe.name}</p>
+                    <p className="mt-0.5 text-xs text-slate-400">
+                      {fe.period} • {fe.memberCount} members • total ${(fe.amount / 100).toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-white">${(fe.myShare / 100).toFixed(2)}</p>
+                      <p className="text-xs text-slate-400">your share</p>
+                    </div>
+                    {fe.paidThisPeriod ? (
+                      <span className="rounded-lg bg-emerald-600/20 border border-emerald-500/30 px-3 py-1.5 text-xs font-medium text-emerald-300">
+                        {fe.currentPeriodLabel} paid
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={markingFixed.has(fe.id)}
+                        onClick={() => handleMarkFixedPaid(fe)}
+                        className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
+                      >
+                        {markingFixed.has(fe.id) ? '…' : `Mark ${fe.currentPeriodLabel} paid`}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </li>
             ))}
