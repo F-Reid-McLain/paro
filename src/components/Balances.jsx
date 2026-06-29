@@ -85,7 +85,10 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
 
   const balanceEntries = Object.entries(balances).filter(([, amount]) => amount !== 0)
 
-  const sharesByPayer = myShares.reduce((acc, item) => {
+  const selfShares = myShares.filter((s) => s.isSelfShare)
+  const otherShares = myShares.filter((s) => !s.isSelfShare)
+
+  const sharesByPayer = otherShares.reduce((acc, item) => {
     const payerId = item.expense?.payer_id
     if (!payerId) return acc
     if (!acc[payerId]) acc[payerId] = []
@@ -186,14 +189,45 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
         </div>
       )}
 
-      {/* Your unsettled shares */}
+      {/* Your own unpaid contributions */}
+      {currentGroup && !loading && selfShares.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold text-white">Your unpaid contributions</h3>
+          <p className="mt-1 text-sm text-slate-300">Expenses you created and split, but haven't marked your own share as paid yet.</p>
+          <ul className="mt-4 space-y-2">
+            {selfShares.map(({ shareId, shareAmount, expense }) => (
+              <li key={shareId} className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-800/70 px-4 py-3">
+                <div>
+                  <p className="font-medium text-white">{expense?.description || 'Expense'}</p>
+                  <p className="mt-0.5 text-xs text-slate-400">
+                    {expense?.date ? new Date(expense.date).toLocaleDateString() : ''} • your share
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <p className="text-sm font-semibold text-white">${(shareAmount / 100).toFixed(2)}</p>
+                  <button
+                    type="button"
+                    onClick={() => handleSettleShare(shareId)}
+                    disabled={settlingShare === shareId}
+                    className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
+                  >
+                    {settlingShare === shareId ? '…' : 'Mark paid'}
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Shares you owe to others */}
       {currentGroup && !loading && (
         <div>
           <h3 className="text-lg font-semibold text-white">Your unsettled shares</h3>
-          <p className="mt-1 text-sm text-slate-300">Expenses you owe a portion of. Mark individual items settled as you pay them.</p>
+          <p className="mt-1 text-sm text-slate-300">Expenses someone else paid that you owe a portion of.</p>
 
           <div className="mt-4">
-            {myShares.length === 0 ? (
+            {otherShares.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-white/10 bg-slate-800/50 p-6 text-center">
                 <p className="text-sm text-slate-400">You have no unsettled shares right now.</p>
               </div>

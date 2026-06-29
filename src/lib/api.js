@@ -239,13 +239,12 @@ export async function fetchMyUnsettledShares(supabase, { groupId, userId }) {
     .eq('settled', false)
   if (sharesErr) throw sharesErr
 
-  return (shares || [])
-    .filter((share) => expenseMap[share.expense_id]?.payer_id !== userId)
-    .map((share) => ({
-      shareId: share.id,
-      shareAmount: Number(share.amount),
-      expense: expenseMap[share.expense_id],
-    }))
+  return (shares || []).map((share) => ({
+    shareId: share.id,
+    shareAmount: Number(share.amount),
+    expense: expenseMap[share.expense_id],
+    isSelfShare: expenseMap[share.expense_id]?.payer_id === userId,
+  }))
 }
 
 export async function getMemberProfiles(supabase, groupId) {
