@@ -169,6 +169,32 @@ export async function deleteGroup(supabase, groupId) {
   if (error) throw error
 }
 
+export async function fetchMyUnsettledShares(supabase, { groupId, userId }) {
+  const { data: expenses, error: expErr } = await supabase
+    .from('expenses')
+    .select('id, description, payer_id, date, amount')
+    .eq('group_id', groupId)
+  if (expErr) throw expErr
+  if (!expenses?.length) return []
+
+  const expenseIds = expenses.map((e) => e.id)
+  const expenseMap = Object.fromEntries(expenses.map((e) => [e.id, e]))
+
+  const { data: shares, error: sharesErr } = await supabase
+    .from('expense_shares')
+    .select('id, expense_id, amount')
+    .in('expense_id', expenseIds)
+    .eq('user_id', userId)
+    .eq('settled', false)
+  if (sharesErr) throw sharesErr
+
+  return (shares || []).map((share) => ({
+    shareId: share.id,
+    shareAmount: Number(share.amount),
+    expense: expenseMap[share.expense_id],
+  }))
+}
+
 export async function getMemberProfiles(supabase, groupId) {
   const { data: memberRows, error: mErr } = await supabase
     .from('group_members')
