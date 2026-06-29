@@ -1,9 +1,9 @@
--- Combined Stage 1 + Stage 2 schema for Paro
+-- Combined schema for Paro
 -- Run this in the Supabase SQL editor for the target project.
 
 create extension if not exists "pgcrypto";
 
--- ===== STAGE 1: profiles, groups, group_members =====
+-- ===== profiles =====
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -19,6 +19,17 @@ drop policy if exists "Users can view own profile" on public.profiles;
 create policy "Users can view own profile" on public.profiles
 for select using (auth.uid() = id);
 
+drop policy if exists "Group members can view each other's profiles" on public.profiles;
+create policy "Group members can view each other's profiles" on public.profiles
+for select using (
+  auth.uid() = profiles.id or
+  exists (
+    select 1 from public.group_members gm1
+    join public.group_members gm2 on gm1.group_id = gm2.group_id
+    where gm1.user_id = auth.uid() and gm2.user_id = profiles.id
+  )
+);
+
 drop policy if exists "Users can update own profile" on public.profiles;
 create policy "Users can update own profile" on public.profiles
 for update using (auth.uid() = id);
@@ -26,6 +37,8 @@ for update using (auth.uid() = id);
 drop policy if exists "Users can insert own profile" on public.profiles;
 create policy "Users can insert own profile" on public.profiles
 for insert with check (auth.uid() = id);
+
+-- ===== groups =====
 
 create table if not exists public.groups (
   id uuid primary key default gen_random_uuid(),
@@ -37,19 +50,7 @@ create table if not exists public.groups (
 
 alter table public.groups enable row level security;
 
-drop policy if exists "Users can view their groups" on public.groups;
-create policy "Users can view their groups" on public.groups
-for select using (
-  owner_id = auth.uid()
-  or exists (
-    select 1 from public.group_members gm
-    where gm.group_id = id and gm.user_id = auth.uid()
-  )
-);
-
-drop policy if exists "Users can create groups" on public.groups;
-create policy "Users can create groups" on public.groups
-for insert with check (owner_id = auth.uid());
+-- ===== group_members =====
 
 create table if not exists public.group_members (
   id uuid primary key default gen_random_uuid(),
@@ -62,25 +63,49 @@ create table if not exists public.group_members (
 
 alter table public.group_members enable row level security;
 
+-- Helper: check membership without going through RLS.
+-- SECURITY DEFINER breaks the groups↔group_members policy cycle.
+create or replace function public.current_user_in_group(p_group_id uuid)
+returns boolean language sql security definer stable set search_path = public as $$
+  select exists (
+    select 1 from public.group_members
+    where group_id = p_group_id and user_id = auth.uid()
+  )
+$$;
+
+-- groups policies
+drop policy if exists "Users can view their groups" on public.groups;
+create policy "Users can view their groups" on public.groups
+for select using (owner_id = auth.uid() or public.current_user_in_group(id));
+
+drop policy if exists "Users can create groups" on public.groups;
+create policy "Users can create groups" on public.groups
+for insert with check (owner_id = auth.uid());
+
+drop policy if exists "Owners can delete groups" on public.groups;
+create policy "Owners can delete groups" on public.groups
+for delete using (owner_id = auth.uid());
+
+drop policy if exists "Owners can update groups" on public.groups;
+create policy "Owners can update groups" on public.groups
+for update using (owner_id = auth.uid());
+
+-- group_members policies (no reference to groups — avoids the RLS cycle)
 drop policy if exists "Members can view group membership" on public.group_members;
 create policy "Members can view group membership" on public.group_members
-for select using (
-  auth.uid() = user_id or exists (
-    select 1 from public.groups g where g.id = group_id and g.owner_id = auth.uid()
-  )
-);
+for select using (public.current_user_in_group(group_id) or auth.uid() = user_id);
 
+-- Only insert your own user_id; slug-based joins go through join_group_by_slug (SECURITY DEFINER)
 drop policy if exists "Members can insert group membership" on public.group_members;
 create policy "Members can insert group membership" on public.group_members
-for insert with check (
-  auth.uid() = user_id or exists (
-    select 1 from public.groups g where g.id = group_id and g.owner_id = auth.uid()
-  )
-);
+for insert with check (auth.uid() = user_id);
 
--- ===== STAGE 2: expenses, expense_shares, fixed_expenses =====
+drop policy if exists "Members can leave groups" on public.group_members;
+create policy "Members can leave groups" on public.group_members
+for delete using (auth.uid() = user_id);
 
--- Expenses table: one row per expense event
+-- ===== expenses =====
+
 create table if not exists public.expenses (
   id uuid primary key default gen_random_uuid(),
   group_id uuid not null references public.groups(id) on delete cascade,
@@ -96,26 +121,19 @@ create table if not exists public.expenses (
   created_at timestamptz default now()
 );
 
-alter table public.expenses add column if not exists is_split boolean default false;
 alter table public.expenses enable row level security;
 
 drop policy if exists "Members can view expenses" on public.expenses;
 create policy "Members can view expenses" on public.expenses
-for select using (
-  exists (
-    select 1 from public.group_members gm where gm.group_id = group_id and gm.user_id = auth.uid()
-  ) or exists (
-    select 1 from public.groups g where g.id = group_id and g.owner_id = auth.uid()
-  )
-);
+for select using (public.current_user_in_group(group_id) or exists (
+  select 1 from public.groups g where g.id = group_id and g.owner_id = auth.uid()
+));
 
 drop policy if exists "Members can insert expenses" on public.expenses;
 create policy "Members can insert expenses" on public.expenses
 for insert with check (
   auth.uid() = payer_id and (
-    exists (
-      select 1 from public.group_members gm where gm.group_id = group_id and gm.user_id = auth.uid()
-    ) or exists (
+    public.current_user_in_group(group_id) or exists (
       select 1 from public.groups g where g.id = group_id and g.owner_id = auth.uid()
     )
   )
@@ -137,7 +155,8 @@ for delete using (
   )
 );
 
--- Expense shares: how each expense is split across users
+-- ===== expense_shares =====
+
 create table if not exists public.expense_shares (
   id uuid primary key default gen_random_uuid(),
   expense_id uuid not null references public.expenses(id) on delete cascade,
@@ -154,8 +173,8 @@ drop policy if exists "Members can view shares for their group expenses" on publ
 create policy "Members can view shares for their group expenses" on public.expense_shares
 for select using (
   exists (
-    select 1 from public.expenses e join public.group_members gm on gm.group_id = e.group_id
-    where e.id = expense_id and gm.user_id = auth.uid()
+    select 1 from public.expenses e
+    where e.id = expense_id and public.current_user_in_group(e.group_id)
   ) or exists (
     select 1 from public.expenses e join public.groups g on g.id = e.group_id
     where e.id = expense_id and g.owner_id = auth.uid()
@@ -166,8 +185,8 @@ drop policy if exists "Members can insert shares" on public.expense_shares;
 create policy "Members can insert shares" on public.expense_shares
 for insert with check (
   exists (
-    select 1 from public.expenses e join public.group_members gm on gm.group_id = e.group_id
-    where e.id = expense_id and gm.user_id = auth.uid()
+    select 1 from public.expenses e
+    where e.id = expense_id and public.current_user_in_group(e.group_id)
   ) or exists (
     select 1 from public.expenses e join public.groups g on g.id = e.group_id
     where e.id = expense_id and g.owner_id = auth.uid()
@@ -177,13 +196,18 @@ for insert with check (
 drop policy if exists "Members can update their own share settled flag" on public.expense_shares;
 create policy "Members can update their own share settled flag" on public.expense_shares
 for update using (
-  auth.uid() = user_id or exists (
+  auth.uid() = user_id
+  or exists (
+    select 1 from public.expenses e where e.id = expense_id and e.payer_id = auth.uid()
+  )
+  or exists (
     select 1 from public.expenses e join public.groups g on g.id = e.group_id
     where e.id = expense_id and g.owner_id = auth.uid()
   )
 );
 
--- Fixed expenses: recurring items defined per group
+-- ===== fixed_expenses =====
+
 create table if not exists public.fixed_expenses (
   id uuid primary key default gen_random_uuid(),
   group_id uuid not null references public.groups(id) on delete cascade,
@@ -193,6 +217,7 @@ create table if not exists public.fixed_expenses (
   period text not null,
   start_date date default now(),
   end_date date,
+  is_split boolean default false,
   created_at timestamptz default now()
 );
 
@@ -201,9 +226,7 @@ alter table public.fixed_expenses enable row level security;
 drop policy if exists "Members can view fixed expenses" on public.fixed_expenses;
 create policy "Members can view fixed expenses" on public.fixed_expenses
 for select using (
-  exists (
-    select 1 from public.group_members gm where gm.group_id = group_id and gm.user_id = auth.uid()
-  ) or exists (
+  public.current_user_in_group(group_id) or exists (
     select 1 from public.groups g where g.id = group_id and g.owner_id = auth.uid()
   )
 );
@@ -211,29 +234,21 @@ for select using (
 drop policy if exists "Members can insert fixed expenses" on public.fixed_expenses;
 create policy "Members can insert fixed expenses" on public.fixed_expenses
 for insert with check (
-  exists (
-    select 1 from public.group_members gm where gm.group_id = group_id and gm.user_id = auth.uid()
-  ) or exists (
+  public.current_user_in_group(group_id) or exists (
     select 1 from public.groups g where g.id = group_id and g.owner_id = auth.uid()
   )
 );
 
--- ===== STAGE 3: profile visibility, payer settle rights, auto-create profile =====
-
--- Allow group members to see each other's profiles (needed for name display)
--- Use profiles.id to avoid ambiguity with group_members.id in the subquery join
-drop policy if exists "Group members can view each other's profiles" on public.profiles;
-create policy "Group members can view each other's profiles" on public.profiles
-for select using (
-  auth.uid() = profiles.id or
-  exists (
-    select 1 from public.group_members gm1
-    join public.group_members gm2 on gm1.group_id = gm2.group_id
-    where gm1.user_id = auth.uid() and gm2.user_id = profiles.id
+drop policy if exists "Members can delete fixed expenses" on public.fixed_expenses;
+create policy "Members can delete fixed expenses" on public.fixed_expenses
+for delete using (
+  public.current_user_in_group(group_id) or exists (
+    select 1 from public.groups g where g.id = group_id and g.owner_id = auth.uid()
   )
 );
 
--- Payments: cash transfers between members (partial or full settlement)
+-- ===== payments =====
+
 create table if not exists public.payments (
   id uuid primary key default gen_random_uuid(),
   group_id uuid not null references public.groups(id) on delete cascade,
@@ -249,20 +264,23 @@ alter table public.payments enable row level security;
 drop policy if exists "Group members can view payments" on public.payments;
 create policy "Group members can view payments" on public.payments
 for select using (
-  exists (select 1 from public.group_members gm where gm.group_id = group_id and gm.user_id = auth.uid())
-  or exists (select 1 from public.groups g where g.id = group_id and g.owner_id = auth.uid())
+  public.current_user_in_group(group_id) or exists (
+    select 1 from public.groups g where g.id = group_id and g.owner_id = auth.uid()
+  )
 );
 
 drop policy if exists "Members can record payments" on public.payments;
 create policy "Members can record payments" on public.payments
 for insert with check (
   (auth.uid() = payer_id or auth.uid() = payee_id) and (
-    exists (select 1 from public.group_members gm where gm.group_id = group_id and gm.user_id = auth.uid())
-    or exists (select 1 from public.groups g where g.id = group_id and g.owner_id = auth.uid())
+    public.current_user_in_group(group_id) or exists (
+      select 1 from public.groups g where g.id = group_id and g.owner_id = auth.uid()
+    )
   )
 );
 
--- Fixed expense period payments: track which periods each member has paid
+-- ===== fixed_expense_payments =====
+
 create table if not exists public.fixed_expense_payments (
   id uuid primary key default gen_random_uuid(),
   fixed_expense_id uuid not null references public.fixed_expenses(id) on delete cascade,
@@ -280,8 +298,7 @@ create policy "Members can view fixed expense payments" on public.fixed_expense_
 for select using (
   exists (
     select 1 from public.fixed_expenses fe
-    join public.group_members gm on gm.group_id = fe.group_id
-    where fe.id = fixed_expense_id and gm.user_id = auth.uid()
+    where fe.id = fixed_expense_id and public.current_user_in_group(fe.group_id)
   )
 );
 
@@ -289,42 +306,7 @@ drop policy if exists "Members can record fixed expense payments" on public.fixe
 create policy "Members can record fixed expense payments" on public.fixed_expense_payments
 for insert with check (auth.uid() = user_id);
 
--- Allow fixed expenses to be split among group members
-alter table public.fixed_expenses add column if not exists is_split boolean default false;
-
--- Allow any group member to delete fixed expenses (they're shared group items)
-drop policy if exists "Members can delete fixed expenses" on public.fixed_expenses;
-create policy "Members can delete fixed expenses" on public.fixed_expenses
-for delete using (
-  exists (select 1 from public.group_members gm where gm.group_id = group_id and gm.user_id = auth.uid())
-  or exists (select 1 from public.groups g where g.id = group_id and g.owner_id = auth.uid())
-);
-
--- Allow members to remove themselves from a group (leave)
-drop policy if exists "Members can leave groups" on public.group_members;
-create policy "Members can leave groups" on public.group_members
-for delete using (auth.uid() = user_id);
-
--- Allow group owners to delete their group (cascades to members, expenses, shares)
-drop policy if exists "Owners can delete groups" on public.groups;
-create policy "Owners can delete groups" on public.groups
-for delete using (owner_id = auth.uid());
-
--- Allow expense payers to mark shares on their own expenses as settled
--- (so "settle up" works bidirectionally without requiring both parties to act)
-drop policy if exists "Members can update their own share settled flag" on public.expense_shares;
-create policy "Members can update their own share settled flag" on public.expense_shares
-for update using (
-  auth.uid() = user_id
-  or exists (
-    select 1 from public.expenses e
-    where e.id = expense_id and e.payer_id = auth.uid()
-  )
-  or exists (
-    select 1 from public.expenses e join public.groups g on g.id = e.group_id
-    where e.id = expense_id and g.owner_id = auth.uid()
-  )
-);
+-- ===== functions =====
 
 -- Auto-create profile row when a user signs up
 create or replace function public.handle_new_user()
@@ -348,13 +330,8 @@ select id, email from auth.users
 on conflict (id) do nothing;
 
 -- RPC: join a group by slug (SECURITY DEFINER so the lookup bypasses RLS)
--- Without this, a non-member can't SELECT the group to find its id, so join fails.
 create or replace function public.join_group_by_slug(p_slug text)
-returns json
-language plpgsql
-security definer
-set search_path = public
-as $$
+returns json language plpgsql security definer set search_path = public as $$
 declare
   v_group public.groups%rowtype;
 begin
