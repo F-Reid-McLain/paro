@@ -170,6 +170,17 @@ export async function deleteExpense(supabase, expenseId) {
   if (error) throw error
 }
 
+export async function updateFixedExpense(supabase, id, fields) {
+  const { data, error } = await supabase
+    .from('fixed_expenses')
+    .update(fields)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
 export async function deleteFixedExpense(supabase, fixedExpenseId) {
   const { error } = await supabase.from('fixed_expenses').delete().eq('id', fixedExpenseId)
   if (error) throw error

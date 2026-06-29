@@ -193,7 +193,7 @@ export default function MonthlyLedger({
   function renderEntry(e, showCatBadge = false) {
     const myShare = userShares.find((s) => s.expense_id === e.id)
     const canDelete = e.is_fixed || e.payer_id === user.id
-    const canEdit = !e.is_fixed && e.payer_id === user.id
+    const canEdit = !e.is_fixed
     const isMenuOpen = openMenuId === e.id
     const isEditing = editingId === e.id
     const shares = menuSharesCache[e.id] || []
