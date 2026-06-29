@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import MonthlyLedger from './components/MonthlyLedger'
+import Balances from './components/Balances'
 import Settings from './components/Settings'
 import AddExpenseModal from './components/AddExpenseModal'
 import FloatingButton from './components/FloatingButton'
-import { fetchExpenses, getUserGroups } from './lib/api'
+import { fetchExpenses, getUserGroups, getMemberProfiles } from './lib/api'
 
 export default function Dashboard({ user, supabase }) {
   const [tab, setTab] = useState('monthly')
@@ -12,6 +13,7 @@ export default function Dashboard({ user, supabase }) {
   const [fixedExpenses, setFixedExpenses] = useState([])
   const [loading, setLoading] = useState(false)
   const [currentGroup, setCurrentGroup] = useState(null)
+  const [members, setMembers] = useState({})
 
   const totalTracked = expenses.length + fixedExpenses.length
   const totalAmount = expenses.reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0) + fixedExpenses.reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0)
@@ -65,6 +67,7 @@ export default function Dashboard({ user, supabase }) {
         if (groups.length) {
           setCurrentGroup(groups[0])
           loadDashboardData(groups[0].id)
+          getMemberProfiles(supabase, groups[0].id).then(setMembers).catch(console.error)
         }
       } catch (e) {
         console.error('init groups', e)
@@ -91,19 +94,9 @@ export default function Dashboard({ user, supabase }) {
           </div>
           {/* Desktop nav — hidden on mobile (bottom tab bar handles it) */}
           <nav className="hidden sm:flex items-center gap-1">
-            <button
-              onClick={() => setTab('monthly')}
-              className={`rounded px-3 py-1.5 text-sm font-medium transition ${tab === 'monthly' ? 'bg-sky-500 text-white' : 'text-slate-300 hover:text-white'}`}
-            >
-              Ledger
-            </button>
-            <button
-              type="button"
-              onClick={() => setTab('settings')}
-              className={`rounded px-3 py-1.5 text-sm font-medium transition ${tab === 'settings' ? 'bg-sky-500 text-white' : 'text-slate-300 hover:text-white'}`}
-            >
-              Settings
-            </button>
+            <button onClick={() => setTab('monthly')} className={`rounded px-3 py-1.5 text-sm font-medium transition ${tab === 'monthly' ? 'bg-sky-500 text-white' : 'text-slate-300 hover:text-white'}`}>Ledger</button>
+            <button onClick={() => setTab('balances')} className={`rounded px-3 py-1.5 text-sm font-medium transition ${tab === 'balances' ? 'bg-sky-500 text-white' : 'text-slate-300 hover:text-white'}`}>Balances</button>
+            <button onClick={() => setTab('settings')} className={`rounded px-3 py-1.5 text-sm font-medium transition ${tab === 'settings' ? 'bg-sky-500 text-white' : 'text-slate-300 hover:text-white'}`}>Settings</button>
             <span className="ml-3 max-w-[180px] truncate text-xs text-slate-400">{user.email}</span>
           </nav>
         </div>
@@ -154,9 +147,16 @@ export default function Dashboard({ user, supabase }) {
         ) : null}
 
         {tab === 'settings' ? (
-          <Settings supabase={supabase} user={user} currentGroup={currentGroup} onGroupChange={(g) => { setCurrentGroup(g); setTab('monthly'); loadDashboardData(g?.id) }} />
+          <Settings supabase={supabase} user={user} currentGroup={currentGroup} onGroupChange={(g) => {
+            setCurrentGroup(g)
+            setTab('monthly')
+            loadDashboardData(g?.id)
+            if (g?.id) getMemberProfiles(supabase, g.id).then(setMembers).catch(console.error)
+          }} />
+        ) : tab === 'balances' ? (
+          <Balances supabase={supabase} user={user} currentGroup={currentGroup} members={members} onRefresh={() => loadDashboardData(currentGroup?.id)} />
         ) : (
-          <MonthlyLedger supabase={supabase} user={user} expenses={[...expenses, ...fixedExpenses]} loading={loading} onRefresh={() => loadDashboardData(currentGroup?.id)} />
+          <MonthlyLedger supabase={supabase} user={user} expenses={[...expenses, ...fixedExpenses]} loading={loading} members={members} onRefresh={() => loadDashboardData(currentGroup?.id)} />
         )}
       </main>
 
@@ -165,18 +165,9 @@ export default function Dashboard({ user, supabase }) {
         className="fixed inset-x-0 bottom-0 z-40 flex border-t border-white/8 bg-slate-950/95 backdrop-blur-md sm:hidden"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <button
-          onClick={() => setTab('monthly')}
-          className={`flex-1 py-3 text-sm font-medium border-t-2 transition-colors ${tab === 'monthly' ? 'border-sky-500 text-sky-400' : 'border-transparent text-slate-500'}`}
-        >
-          Ledger
-        </button>
-        <button
-          onClick={() => setTab('settings')}
-          className={`flex-1 py-3 text-sm font-medium border-t-2 transition-colors ${tab === 'settings' ? 'border-sky-500 text-sky-400' : 'border-transparent text-slate-500'}`}
-        >
-          Settings
-        </button>
+        <button onClick={() => setTab('monthly')} className={`flex-1 py-3 text-sm font-medium border-t-2 transition-colors ${tab === 'monthly' ? 'border-sky-500 text-sky-400' : 'border-transparent text-slate-500'}`}>Ledger</button>
+        <button onClick={() => setTab('balances')} className={`flex-1 py-3 text-sm font-medium border-t-2 transition-colors ${tab === 'balances' ? 'border-sky-500 text-sky-400' : 'border-transparent text-slate-500'}`}>Balances</button>
+        <button onClick={() => setTab('settings')} className={`flex-1 py-3 text-sm font-medium border-t-2 transition-colors ${tab === 'settings' ? 'border-sky-500 text-sky-400' : 'border-transparent text-slate-500'}`}>Settings</button>
       </nav>
 
       <AddExpenseModal open={openAdd} onClose={() => setOpenAdd(false)} supabase={supabase} user={user} currentGroup={currentGroup} onCreated={(created) => loadDashboardData(currentGroup?.id || created?.group_id)} />

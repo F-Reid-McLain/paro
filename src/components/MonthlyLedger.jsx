@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchUserExpenseShares, settleExpenseShare } from '../lib/api'
 
-export default function MonthlyLedger({ expenses = [], loading = false, supabase, user, onRefresh }) {
+export default function MonthlyLedger({ expenses = [], loading = false, supabase, user, onRefresh, members = {} }) {
   const [userShares, setUserShares] = useState([])
   const [settlingShareId, setSettlingShareId] = useState(null)
 
@@ -142,7 +142,12 @@ export default function MonthlyLedger({ expenses = [], loading = false, supabase
                                   <div className="text-sm font-medium text-white">{e.description || 'Expense'}</div>
                                   <div className="text-xs text-slate-400">
                                     {new Date(e.date || e.created_at).toLocaleDateString()}
-                                    {e.is_split ? ' • Split cost' : ''}
+                                    {e.is_split ? ' • Split' : ''}
+                                    {e.payer_id ? (
+                                      e.payer_id === user.id
+                                        ? ' • You paid'
+                                        : ` • ${members[e.payer_id]?.name || 'Member'} paid`
+                                    ) : null}
                                   </div>
                                 </div>
                                 <div className="text-right">

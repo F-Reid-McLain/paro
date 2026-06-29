@@ -212,4 +212,55 @@ for insert with check (
   )
 );
 
+-- ===== STAGE 3: profile visibility, payer settle rights, auto-create profile =====
+
+-- Allow group members to see each other's profiles (needed for name display)
+drop policy if exists "Group members can view each other's profiles" on public.profiles;
+create policy "Group members can view each other's profiles" on public.profiles
+for select using (
+  auth.uid() = id or
+  exists (
+    select 1 from public.group_members gm1
+    join public.group_members gm2 on gm1.group_id = gm2.group_id
+    where gm1.user_id = auth.uid() and gm2.user_id = id
+  )
+);
+
+-- Allow expense payers to mark shares on their own expenses as settled
+-- (so "settle up" works bidirectionally without requiring both parties to act)
+drop policy if exists "Members can update their own share settled flag" on public.expense_shares;
+create policy "Members can update their own share settled flag" on public.expense_shares
+for update using (
+  auth.uid() = user_id
+  or exists (
+    select 1 from public.expenses e
+    where e.id = expense_id and e.payer_id = auth.uid()
+  )
+  or exists (
+    select 1 from public.expenses e join public.groups g on g.id = e.group_id
+    where e.id = expense_id and g.owner_id = auth.uid()
+  )
+);
+
+-- Auto-create profile row when a user signs up
+create or replace function public.handle_new_user()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.profiles (id, full_name, email)
+  values (new.id, new.raw_user_meta_data->>'full_name', new.email)
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+
+-- Backfill profiles for any existing users who don't have one yet
+insert into public.profiles (id, email)
+select id, email from auth.users
+on conflict (id) do nothing;
+
 -- End combined schema
