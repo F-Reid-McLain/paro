@@ -119,7 +119,7 @@ export default function Dashboard({ user, supabase }) {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-5 pb-24 sm:px-6 sm:py-6 sm:pb-10">
-        {tab !== 'settings' ? (
+        {tab === 'monthly' ? (
           <div className="mb-6 space-y-4">
             <div className="rounded-2xl border border-white/10 bg-slate-800/70 p-4 shadow-lg shadow-slate-950/30">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
