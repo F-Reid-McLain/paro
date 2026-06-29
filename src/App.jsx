@@ -103,22 +103,22 @@ function App() {
       <div className="mx-auto flex min-h-screen max-w-6xl flex-col gap-10 px-6 py-12 lg:flex-row lg:items-center lg:justify-between lg:px-8">
         <section className="max-w-2xl space-y-6">
           <span className="inline-flex rounded-full border border-sky-400/40 bg-sky-400/10 px-3 py-1 text-sm font-medium text-sky-200">
-            Stage 1 • Setup & auth
+            Shared expenses, simplified
           </span>
           <div className="space-y-4">
             <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-              Paro starts with a secure foundation for shared expenses.
+              Keep household and group costs clear without the spreadsheet hassle.
             </h1>
             <p className="max-w-xl text-lg text-slate-300">
-              We are wiring up a Vite + React app, Tailwind styling, Supabase Auth, and the first database schema so future expense features can sit on top of a reliable base.
+              Paro brings together shared bills, recurring expenses, and monthly summaries in one calm place so everyone can stay on the same page.
             </p>
           </div>
 
           <ul className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-slate-300 shadow-2xl shadow-slate-950/30">
-            <li>• React + Vite + Tailwind shell is live.</li>
-            <li>• Supabase client and auth UI are connected.</li>
-            <li>• Initial SQL schema covers profiles, groups, and members.</li>
-            <li>• Next step: add expense creation and settlement flows.</li>
+            <li>• Create or join a shared group in seconds.</li>
+            <li>• Track fixed bills and everyday spending together.</li>
+            <li>• Review a monthly ledger that makes costs easy to understand.</li>
+            <li>• Designed to feel simple on mobile and desktop.</li>
           </ul>
         </section>
 

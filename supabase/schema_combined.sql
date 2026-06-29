@@ -15,12 +15,15 @@ create table if not exists public.profiles (
 
 alter table public.profiles enable row level security;
 
+drop policy if exists "Users can view own profile" on public.profiles;
 create policy "Users can view own profile" on public.profiles
 for select using (auth.uid() = id);
 
+drop policy if exists "Users can update own profile" on public.profiles;
 create policy "Users can update own profile" on public.profiles
 for update using (auth.uid() = id);
 
+drop policy if exists "Users can insert own profile" on public.profiles;
 create policy "Users can insert own profile" on public.profiles
 for insert with check (auth.uid() = id);
 
@@ -34,9 +37,11 @@ create table if not exists public.groups (
 
 alter table public.groups enable row level security;
 
+drop policy if exists "Users can view their groups" on public.groups;
 create policy "Users can view their groups" on public.groups
 for select using (owner_id = auth.uid());
 
+drop policy if exists "Users can create groups" on public.groups;
 create policy "Users can create groups" on public.groups
 for insert with check (owner_id = auth.uid());
 
@@ -51,8 +56,17 @@ create table if not exists public.group_members (
 
 alter table public.group_members enable row level security;
 
+drop policy if exists "Members can view group membership" on public.group_members;
 create policy "Members can view group membership" on public.group_members
 for select using (
+  auth.uid() = user_id or exists (
+    select 1 from public.groups g where g.id = group_id and g.owner_id = auth.uid()
+  )
+);
+
+drop policy if exists "Members can insert group membership" on public.group_members;
+create policy "Members can insert group membership" on public.group_members
+for insert with check (
   auth.uid() = user_id or exists (
     select 1 from public.groups g where g.id = group_id and g.owner_id = auth.uid()
   )
@@ -71,12 +85,15 @@ create table if not exists public.expenses (
   description text,
   category text,
   is_fixed boolean default false,
+  is_split boolean default false,
   period text,
   created_at timestamptz default now()
 );
 
+alter table public.expenses add column if not exists is_split boolean default false;
 alter table public.expenses enable row level security;
 
+drop policy if exists "Members can view expenses" on public.expenses;
 create policy "Members can view expenses" on public.expenses
 for select using (
   exists (
@@ -86,6 +103,7 @@ for select using (
   )
 );
 
+drop policy if exists "Members can insert expenses" on public.expenses;
 create policy "Members can insert expenses" on public.expenses
 for insert with check (
   auth.uid() = payer_id and (
@@ -97,6 +115,7 @@ for insert with check (
   )
 );
 
+drop policy if exists "Payer or owner can update expenses" on public.expenses;
 create policy "Payer or owner can update expenses" on public.expenses
 for update using (
   auth.uid() = payer_id or exists (
@@ -104,6 +123,7 @@ for update using (
   )
 );
 
+drop policy if exists "Payer or owner can delete expenses" on public.expenses;
 create policy "Payer or owner can delete expenses" on public.expenses
 for delete using (
   auth.uid() = payer_id or exists (
@@ -124,6 +144,7 @@ create table if not exists public.expense_shares (
 
 alter table public.expense_shares enable row level security;
 
+drop policy if exists "Members can view shares for their group expenses" on public.expense_shares;
 create policy "Members can view shares for their group expenses" on public.expense_shares
 for select using (
   exists (
@@ -135,6 +156,7 @@ for select using (
   )
 );
 
+drop policy if exists "Members can insert shares" on public.expense_shares;
 create policy "Members can insert shares" on public.expense_shares
 for insert with check (
   exists (
@@ -146,6 +168,7 @@ for insert with check (
   )
 );
 
+drop policy if exists "Members can update their own share settled flag" on public.expense_shares;
 create policy "Members can update their own share settled flag" on public.expense_shares
 for update using (
   auth.uid() = user_id or exists (
@@ -169,6 +192,7 @@ create table if not exists public.fixed_expenses (
 
 alter table public.fixed_expenses enable row level security;
 
+drop policy if exists "Members can view fixed expenses" on public.fixed_expenses;
 create policy "Members can view fixed expenses" on public.fixed_expenses
 for select using (
   exists (
@@ -178,6 +202,7 @@ for select using (
   )
 );
 
+drop policy if exists "Members can insert fixed expenses" on public.fixed_expenses;
 create policy "Members can insert fixed expenses" on public.fixed_expenses
 for insert with check (
   exists (

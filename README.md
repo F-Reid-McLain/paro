@@ -16,6 +16,8 @@ npm install tailwindcss @tailwindcss/vite @supabase/supabase-js
 
 Copy [.env.example](.env.example) to .env.local and add your Supabase values.
 
+> If deploying, also set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in your deployment environment (for example, Vercel environment variables).
+
 ### 3. Apply the SQL schema
 
 Open the Supabase SQL Editor and run the statements in [supabase/schema.sql](supabase/schema.sql).

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getUserGroups, createGroup, joinGroup } from '../lib/api'
 
-export default function Groups({ supabase, user, onGroupChange }) {
+export default function Groups({ supabase, user, currentGroup, onGroupChange }) {
   const [groups, setGroups] = useState([])
   const [loading, setLoading] = useState(false)
   const [name, setName] = useState('')
@@ -23,6 +23,7 @@ export default function Groups({ supabase, user, onGroupChange }) {
   useEffect(() => { load() }, [])
 
   async function handleCreate() {
+    if (currentGroup) return alert('Leave your current group before creating or joining another one.')
     if (!name) return alert('Name required')
     try {
       const g = await createGroup(supabase, { name, slug: slug || name.toLowerCase().replace(/\s+/g,'-'), owner_id: user.id })
@@ -37,6 +38,7 @@ export default function Groups({ supabase, user, onGroupChange }) {
   }
 
   async function handleJoin() {
+    if (currentGroup) return alert('Leave your current group before creating or joining another one.')
     if (!joinSlug) return alert('Enter group slug to join')
     try {
       const g = await joinGroup(supabase, { slug: joinSlug, user_id: user.id })
@@ -60,19 +62,21 @@ export default function Groups({ supabase, user, onGroupChange }) {
       <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="rounded border border-white/6 bg-slate-800 p-4">
           <h3 className="text-sm text-slate-200">Create group</h3>
-          <input className="mt-2 w-full rounded bg-slate-700 px-3 py-2 text-white" placeholder="Group name" value={name} onChange={(e) => setName(e.target.value)} />
-          <input className="mt-2 w-full rounded bg-slate-700 px-3 py-2 text-white" placeholder="Slug (optional)" value={slug} onChange={(e) => setSlug(e.target.value)} />
+          <input className="mt-2 w-full rounded bg-slate-700 px-3 py-2 text-white" placeholder="Group name" value={name} onChange={(e) => setName(e.target.value)} disabled={!!currentGroup} />
+          <input className="mt-2 w-full rounded bg-slate-700 px-3 py-2 text-white" placeholder="Slug (optional)" value={slug} onChange={(e) => setSlug(e.target.value)} disabled={!!currentGroup} />
           <div className="mt-3 text-right">
-            <button onClick={handleCreate} className="rounded bg-emerald-500 px-3 py-2 text-white">Create</button>
+            <button onClick={handleCreate} className="rounded bg-emerald-500 px-3 py-2 text-white" disabled={!!currentGroup}>Create</button>
           </div>
+          {currentGroup ? <p className="mt-3 text-sm text-amber-300">Leave your current group before creating a new one.</p> : null}
         </div>
 
         <div className="rounded border border-white/6 bg-slate-800 p-4">
           <h3 className="text-sm text-slate-200">Join group</h3>
-          <input className="mt-2 w-full rounded bg-slate-700 px-3 py-2 text-white" placeholder="Group slug" value={joinSlug} onChange={(e) => setJoinSlug(e.target.value)} />
+          <input className="mt-2 w-full rounded bg-slate-700 px-3 py-2 text-white" placeholder="Group slug" value={joinSlug} onChange={(e) => setJoinSlug(e.target.value)} disabled={!!currentGroup} />
           <div className="mt-3 text-right">
-            <button onClick={handleJoin} className="rounded bg-sky-500 px-3 py-2 text-white">Join</button>
+            <button onClick={handleJoin} className="rounded bg-sky-500 px-3 py-2 text-white" disabled={!!currentGroup}>Join</button>
           </div>
+          {currentGroup ? <p className="mt-3 text-sm text-amber-300">Leave your current group before joining another one.</p> : null}
         </div>
       </div>
 

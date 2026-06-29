@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
-import FixedExpenses from './components/FixedExpenses'
 import MonthlyLedger from './components/MonthlyLedger'
-import Groups from './components/Groups'
+import Settings from './components/Settings'
 import AddExpenseModal from './components/AddExpenseModal'
 import FloatingButton from './components/FloatingButton'
 import { fetchExpenses } from './lib/api'
@@ -46,7 +45,7 @@ export default function Dashboard({ user, supabase }) {
         amount: item.amount,
         date: item.start_date || item.created_at,
         is_fixed: true,
-        category: item.period || 'Recurring',
+        category: 'Fixed',
         created_at: item.created_at,
       }))
 
@@ -68,70 +67,71 @@ export default function Dashboard({ user, supabase }) {
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-semibold">Paro</h1>
             <nav className="flex gap-2">
-              <button onClick={() => setTab('groups')} className={`px-3 py-2 rounded ${tab==='groups' ? 'bg-sky-500 text-white' : 'text-slate-300'}`}>Groups</button>
-              <button onClick={() => setTab('fixed')} className={`px-3 py-2 rounded ${tab==='fixed' ? 'bg-sky-500 text-white' : 'text-slate-300'}`}>Fixed Expenses</button>
               <button onClick={() => setTab('monthly')} className={`px-3 py-2 rounded ${tab==='monthly' ? 'bg-sky-500 text-white' : 'text-slate-300'}`}>Monthly Ledger</button>
             </nav>
             {currentGroup ? (
               <div className="ml-4 rounded-md bg-slate-800/60 px-3 py-1 text-sm text-slate-200">Group: <span className="font-medium">{currentGroup.name}</span></div>
             ) : null}
           </div>
-          <div className="text-sm text-slate-300">Signed in as <span className="font-medium">{user.email}</span></div>
+          <div className="flex items-center gap-3 text-sm text-slate-300">
+            <button
+              type="button"
+              onClick={() => setTab('settings')}
+              className={`rounded px-3 py-2 text-sm font-medium transition ${tab === 'settings' ? 'bg-sky-500 text-white' : 'text-slate-300'}`}
+            >
+              Settings
+            </button>
+            <div>Signed in as <span className="font-medium">{user.email}</span></div>
+          </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-6xl p-6">
-        <div className="mb-6 space-y-4">
-          <div className="rounded-2xl border border-white/10 bg-slate-800/70 p-4 shadow-lg shadow-slate-950/30">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <p className="text-sm font-medium text-sky-300">At a glance</p>
-                <h2 className="text-lg font-semibold text-white">{currentGroup?.name || 'Choose a group to begin'}</h2>
-                <p className="text-sm text-slate-400">{totalTracked} entries tracked • {fixedCount} fixed • {variableCount} variable</p>
-              </div>
-              <div className="rounded-xl border border-white/10 bg-slate-900/70 px-4 py-3 text-right">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Current total</p>
-                <p className="text-xl font-semibold text-white">${(totalAmount / 100).toFixed(2)}</p>
+        {tab !== 'settings' ? (
+          <div className="mb-6 space-y-4">
+            <div className="rounded-2xl border border-white/10 bg-slate-800/70 p-4 shadow-lg shadow-slate-950/30">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-sm font-medium text-sky-300">At a glance</p>
+                  <h2 className="text-lg font-semibold text-white">{currentGroup?.name || 'Choose a group to begin'}</h2>
+                  <p className="text-sm text-slate-400">{totalTracked} entries tracked • {fixedCount} fixed • {variableCount} variable</p>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-slate-900/70 px-4 py-3 text-right">
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Current total</p>
+                  <p className="text-xl font-semibold text-white">${(totalAmount / 100).toFixed(2)}</p>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="rounded-2xl border border-white/10 bg-slate-800/70 p-4 shadow-lg shadow-slate-950/20">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-white">Recent activity</h3>
-              <span className="text-xs text-slate-400">Latest updates</span>
+            <div className="rounded-2xl border border-white/10 bg-slate-800/70 p-4 shadow-lg shadow-slate-950/20">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-white">Recent activity</h3>
+                <span className="text-xs text-slate-400">Latest updates</span>
+              </div>
+              {recentActivity.length ? (
+                <ul className="space-y-2">
+                  {recentActivity.map((entry) => (
+                    <li key={entry.id} className="flex items-center justify-between rounded-xl border border-white/10 bg-slate-900/60 px-3 py-2">
+                      <div>
+                        <p className="text-sm font-medium text-slate-100">{entry.description || 'Expense'}</p>
+                        <p className="text-xs text-slate-400">{entry.is_fixed ? 'Fixed expense' : 'Variable expense'} • {entry.category || 'Other'}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-white">${(Number(entry.amount) / 100).toFixed(2)}</p>
+                        <p className="text-[11px] text-slate-400">{new Date(entry.date || entry.created_at).toLocaleDateString()}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-slate-400">No activity yet. Add your first expense to see it here.</p>
+              )}
             </div>
-            {recentActivity.length ? (
-              <ul className="space-y-2">
-                {recentActivity.map((entry) => (
-                  <li key={entry.id} className="flex items-center justify-between rounded-xl border border-white/10 bg-slate-900/60 px-3 py-2">
-                    <div>
-                      <p className="text-sm font-medium text-slate-100">{entry.description || 'Expense'}</p>
-                      <p className="text-xs text-slate-400">{entry.is_fixed ? 'Fixed expense' : 'Variable expense'} • {entry.category || 'Other'}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-white">${(Number(entry.amount) / 100).toFixed(2)}</p>
-                      <p className="text-[11px] text-slate-400">{new Date(entry.date || entry.created_at).toLocaleDateString()}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-slate-400">No activity yet. Add your first expense to see it here.</p>
-            )}
           </div>
-        </div>
+        ) : null}
 
-        {tab === 'groups' ? (
-          <Groups supabase={supabase} user={user} onGroupChange={(g) => { setCurrentGroup(g); setTab('monthly'); loadDashboardData(g.id) }} />
-        ) : tab === 'fixed' ? (
-          <FixedExpenses
-            supabase={supabase}
-            user={user}
-            currentGroup={currentGroup}
-            onGroupChange={(group) => setCurrentGroup(group)}
-            onChanged={(groupId) => loadDashboardData(groupId || currentGroup?.id)}
-          />
+        {tab === 'settings' ? (
+          <Settings supabase={supabase} user={user} currentGroup={currentGroup} onGroupChange={(g) => { setCurrentGroup(g); setTab('monthly'); loadDashboardData(g?.id) }} />
         ) : (
           <MonthlyLedger supabase={supabase} user={user} expenses={[...expenses, ...fixedExpenses]} loading={loading} onRefresh={() => loadDashboardData(currentGroup?.id)} />
         )}

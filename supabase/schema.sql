@@ -10,12 +10,15 @@ create table if not exists public.profiles (
 
 alter table public.profiles enable row level security;
 
+drop policy if exists "Users can view own profile" on public.profiles;
 create policy "Users can view own profile" on public.profiles
 for select using (auth.uid() = id);
 
+drop policy if exists "Users can update own profile" on public.profiles;
 create policy "Users can update own profile" on public.profiles
 for update using (auth.uid() = id);
 
+drop policy if exists "Users can insert own profile" on public.profiles;
 create policy "Users can insert own profile" on public.profiles
 for insert with check (auth.uid() = id);
 
@@ -29,9 +32,11 @@ create table if not exists public.groups (
 
 alter table public.groups enable row level security;
 
+drop policy if exists "Users can view their groups" on public.groups;
 create policy "Users can view their groups" on public.groups
 for select using (owner_id = auth.uid());
 
+drop policy if exists "Users can create groups" on public.groups;
 create policy "Users can create groups" on public.groups
 for insert with check (owner_id = auth.uid());
 
@@ -46,8 +51,17 @@ create table if not exists public.group_members (
 
 alter table public.group_members enable row level security;
 
+drop policy if exists "Members can view group membership" on public.group_members;
 create policy "Members can view group membership" on public.group_members
 for select using (
+  auth.uid() = user_id or exists (
+    select 1 from public.groups g where g.id = group_id and g.owner_id = auth.uid()
+  )
+);
+
+drop policy if exists "Members can insert group membership" on public.group_members;
+create policy "Members can insert group membership" on public.group_members
+for insert with check (
   auth.uid() = user_id or exists (
     select 1 from public.groups g where g.id = group_id and g.owner_id = auth.uid()
   )

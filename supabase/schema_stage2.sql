@@ -14,10 +14,12 @@ create table if not exists public.expenses (
   description text,
   category text,
   is_fixed boolean default false,
+  is_split boolean default false,
   period text, -- 'monthly', 'yearly', 'weekly', etc. used for fixed expenses
   created_at timestamptz default now()
 );
 
+alter table public.expenses add column if not exists is_split boolean default false;
 alter table public.expenses enable row level security;
 
 -- Members of the group (owner or group_members) can SELECT

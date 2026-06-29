@@ -16,5 +16,5 @@ export const supabase = isSupabaseConfigured
   : null
 
 export function getSupabaseConfigMessage() {
-  return 'Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env.local before using auth.'
+  return 'Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.local for local development, or add them to your deployment environment (for example Vercel) before using auth.'
 }
