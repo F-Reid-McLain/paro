@@ -154,6 +154,17 @@ export async function joinGroup(supabase, { slug }) {
   return typeof data === 'string' ? JSON.parse(data) : data
 }
 
+export async function updateExpense(supabase, expenseId, fields) {
+  const { data, error } = await supabase
+    .from('expenses')
+    .update(fields)
+    .eq('id', expenseId)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
 export async function deleteExpense(supabase, expenseId) {
   const { error } = await supabase.from('expenses').delete().eq('id', expenseId)
   if (error) throw error

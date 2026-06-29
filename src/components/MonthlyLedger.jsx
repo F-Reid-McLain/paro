@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { fetchExpenseSharesWithMembers, setExpenseShareSettled } from '../lib/api'
+import { fetchExpenseSharesWithMembers, setExpenseShareSettled, updateExpense } from '../lib/api'
 
 function ChevronDown() {
   return (
@@ -28,6 +28,9 @@ export default function MonthlyLedger({
   const [togglingShare, setTogglingShare] = useState(null)
   const [collapsed, setCollapsed] = useState(new Set())
   const [sortMode, setSortMode] = useState('recent')
+  const [editingId, setEditingId] = useState(null)
+  const [editDraft, setEditDraft] = useState({})
+  const [saving, setSaving] = useState(false)
   const menuRef = useRef(null)
 
   useEffect(() => {
@@ -83,6 +86,38 @@ export default function MonthlyLedger({
       onRefresh && onRefresh()
     } catch (e) { console.error('toggle share', e); alert(e.message || 'Failed to update') }
     finally { setTogglingShare(null) }
+  }
+
+  function startEdit(expense) {
+    setEditDraft({
+      description: expense.description || '',
+      amount: (expense.amount / 100).toFixed(2),
+      date: expense.date || new Date().toISOString().split('T')[0],
+      category: expense.category || '',
+    })
+    setEditingId(expense.id)
+    setOpenMenuId(null)
+  }
+
+  async function handleSaveEdit(expenseId) {
+    const parsed = parseFloat(editDraft.amount)
+    if (Number.isNaN(parsed) || parsed <= 0) { alert('Enter a valid amount'); return }
+    setSaving(true)
+    try {
+      await updateExpense(supabase, expenseId, {
+        description: editDraft.description || null,
+        amount: Math.round(parsed * 100),
+        date: editDraft.date,
+        category: editDraft.category || null,
+      })
+      setEditingId(null)
+      onRefresh && onRefresh()
+    } catch (e) {
+      console.error('update expense', e)
+      alert(e.message || 'Failed to save')
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function handleDelete(expense) {
@@ -158,8 +193,71 @@ export default function MonthlyLedger({
   function renderEntry(e, showCatBadge = false) {
     const myShare = userShares.find((s) => s.expense_id === e.id)
     const canDelete = e.is_fixed || e.payer_id === user.id
+    const canEdit = !e.is_fixed && e.payer_id === user.id
     const isMenuOpen = openMenuId === e.id
+    const isEditing = editingId === e.id
     const shares = menuSharesCache[e.id] || []
+
+    if (isEditing) {
+      return (
+        <li key={e.id} className="border-2 border-accent bg-deep p-3 space-y-2">
+          <input
+            className="w-full rounded-none border-2 border-def bg-card px-3 py-1.5 text-sm text-hi"
+            placeholder="Description"
+            value={editDraft.description}
+            onChange={(e) => setEditDraft((d) => ({ ...d, description: e.target.value }))}
+          />
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              className="w-full rounded-none border-2 border-def bg-card px-3 py-1.5 text-sm text-hi"
+              placeholder="Amount"
+              value={editDraft.amount}
+              onChange={(ev) => setEditDraft((d) => ({ ...d, amount: ev.target.value }))}
+            />
+            <input
+              type="date"
+              className="w-full rounded-none border-2 border-def bg-card px-3 py-1.5 text-sm text-hi"
+              value={editDraft.date}
+              onChange={(ev) => setEditDraft((d) => ({ ...d, date: ev.target.value }))}
+            />
+          </div>
+          <select
+            className="w-full rounded-none border-2 border-def bg-card px-3 py-1.5 text-sm text-hi"
+            value={editDraft.category}
+            onChange={(ev) => setEditDraft((d) => ({ ...d, category: ev.target.value }))}
+          >
+            <option value="">No category</option>
+            <option value="Food">Food</option>
+            <option value="Housing">Housing</option>
+            <option value="Transport">Transport</option>
+            <option value="Utilities">Utilities</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Shopping">Shopping</option>
+            <option value="Other">Other</option>
+          </select>
+          <div className="flex justify-end gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => setEditingId(null)}
+              className="rounded-lg border border-def px-3 py-1.5 text-xs text-lo"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() => handleSaveEdit(e.id)}
+              className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-hi disabled:opacity-60"
+            >
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+        </li>
+      )
+    }
 
     return (
       <li key={e.id} className="relative border-2 border-def bg-deep p-2.5">
@@ -269,6 +367,21 @@ export default function MonthlyLedger({
               </div>
             )}
 
+            {canEdit && (
+              <div className="border-b border-def p-2">
+                <button
+                  type="button"
+                  onClick={() => startEdit(e)}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-hi hover:bg-input transition-colors"
+                >
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61zm1.414 1.06a.25.25 0 0 0-.354 0L10.811 3.75l1.439 1.44 1.263-1.263a.25.25 0 0 0 0-.354l-1.086-1.086zM11.189 6.25 9.75 4.81 3.22 11.34a.25.25 0 0 0-.063.108l-.587 2.054 2.054-.587a.25.25 0 0 0 .108-.063z" />
+                  </svg>
+                  Edit entry
+                </button>
+              </div>
+            )}
+
             {canDelete && (
               <div className="p-2">
                 <button
@@ -284,7 +397,7 @@ export default function MonthlyLedger({
               </div>
             )}
 
-            {!e.is_split && !myShare && !canDelete && (
+            {!canEdit && !e.is_split && !myShare && !canDelete && (
               <div className="p-3">
                 <p className="text-xs text-dim">No actions available.</p>
               </div>
