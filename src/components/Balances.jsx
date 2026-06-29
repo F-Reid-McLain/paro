@@ -126,7 +126,7 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
                       type="button"
                       onClick={() => handleSettleUp(userId)}
                       disabled={settling === userId}
-                      className="rounded-lg bg-sky-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+                      className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
                     >
                       {settling === userId ? 'Settling…' : 'Settle all'}
                     </button>
@@ -167,7 +167,7 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
                         type="button"
                         disabled={markingFixed.has(fe.id)}
                         onClick={() => handleMarkFixedPaid(fe)}
-                        className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
+                        className="rounded-lg bg-accent-dark px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
                       >
                         {markingFixed.has(fe.id) ? '…' : `Mark ${fe.currentPeriodLabel} paid`}
                       </button>

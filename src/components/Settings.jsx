@@ -20,6 +20,25 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
   // Sign out
   const [signingOut, setSigningOut] = useState(false)
 
+  // Theme
+  const [activeTheme, setActiveTheme] = useState(
+    () => localStorage.getItem('paro-theme') || 'midnight'
+  )
+
+  function handleThemeChange(themeId) {
+    setActiveTheme(themeId)
+    localStorage.setItem('paro-theme', themeId)
+    document.documentElement.dataset.theme = themeId
+  }
+
+  const THEMES = [
+    { id: 'midnight', name: 'Midnight', color: '#0ea5e9' },
+    { id: 'synthwave', name: 'Synthwave', color: '#8b5cf6' },
+    { id: 'ember', name: 'Ember', color: '#f97316' },
+    { id: 'rose', name: 'Rose', color: '#ec4899' },
+    { id: 'neon', name: 'Neon', color: '#06b6d4' },
+  ]
+
   useEffect(() => {
     if (!supabase || !user?.id) return
     supabase.from('profiles').select('full_name, email').eq('id', user.id).single()
@@ -159,7 +178,7 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
             type="button"
             onClick={handleSaveName}
             disabled={savingName || !profileName.trim()}
-            className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+            className="rounded-lg bg-accent-dark px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
             {savingName ? 'Saving…' : 'Save'}
           </button>
@@ -176,6 +195,30 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
           </svg>
           {signingOut ? 'Signing out…' : 'Sign out'}
         </button>
+      </div>
+
+      {/* Appearance */}
+      <div className="border-2 border-white/10 bg-slate-800/70 p-5 space-y-4">
+        <h3 className="font-pixel text-[10px] font-semibold uppercase tracking-wider text-slate-400">Appearance</h3>
+        <div className="grid grid-cols-5 gap-2">
+          {THEMES.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => handleThemeChange(t.id)}
+              className={`flex flex-col items-center gap-1.5 p-2 transition-opacity rounded-lg ${activeTheme === t.id ? 'opacity-100' : 'opacity-40 hover:opacity-70'}`}
+            >
+              <div
+                className="h-9 w-9 border-2"
+                style={{
+                  backgroundColor: t.color,
+                  borderColor: activeTheme === t.id ? '#fff' : 'transparent',
+                }}
+              />
+              <span className="font-pixel text-[8px] leading-tight text-slate-300 text-center">{t.name}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Active group — members + invite */}
@@ -255,7 +298,7 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
                         <button
                           type="button"
                           onClick={() => onGroupChange && onGroupChange(group)}
-                          className="rounded-lg bg-sky-500 px-3 py-1.5 text-xs font-medium text-white"
+                          className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white"
                         >
                           Set active
                         </button>
@@ -295,7 +338,7 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
                         type="button"
                         disabled={!updates[group.id] || updates[group.id].trim() === '' || updates[group.id] === group.name}
                         onClick={() => saveGroupName(group.id)}
-                        className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-40"
+                        className="rounded-lg bg-accent-dark px-3 py-1.5 text-xs font-medium text-white disabled:opacity-40"
                       >
                         Save
                       </button>

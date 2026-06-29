@@ -133,14 +133,14 @@ export default function Dashboard({ user, supabase }) {
           <div className="flex items-center gap-1">
             {!inSettings && (
               <nav className="hidden sm:flex items-center gap-1 mr-2">
-                <button onClick={() => setTab('monthly')} className={`font-pixel rounded-lg px-3 py-1.5 text-xs font-medium transition ${tab === 'monthly' ? 'bg-sky-500 text-white' : 'text-slate-300 hover:text-white'}`}>Ledger</button>
-                <button onClick={() => setTab('balances')} className={`font-pixel rounded-lg px-3 py-1.5 text-xs font-medium transition ${tab === 'balances' ? 'bg-sky-500 text-white' : 'text-slate-300 hover:text-white'}`}>Balances</button>
+                <button onClick={() => setTab('monthly')} className={`font-pixel rounded-lg px-3 py-1.5 text-xs font-medium transition ${tab === 'monthly' ? 'bg-accent text-white' : 'text-slate-300 hover:text-white'}`}>Ledger</button>
+                <button onClick={() => setTab('balances')} className={`font-pixel rounded-lg px-3 py-1.5 text-xs font-medium transition ${tab === 'balances' ? 'bg-accent text-white' : 'text-slate-300 hover:text-white'}`}>Balances</button>
                 <span className="ml-2 max-w-[180px] truncate text-xs text-slate-400">{user.email}</span>
               </nav>
             )}
             <button
               onClick={() => setTab(inSettings ? 'monthly' : 'settings')}
-              className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${inSettings ? 'bg-sky-500 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+              className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${inSettings ? 'bg-accent text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
               aria-label="Settings"
             >
               <GearIcon />
@@ -155,7 +155,7 @@ export default function Dashboard({ user, supabase }) {
             <div className="border-2 border-white/10 bg-slate-800/70 p-4 shadow-lg shadow-slate-950/30">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <p className="font-pixel text-xs font-medium text-sky-300">At a glance</p>
+                  <p className="font-pixel text-xs font-medium text-accent-muted">At a glance</p>
                   <h2 className="text-lg font-semibold text-white">{currentGroup?.name || 'Choose a group to begin'}</h2>
                   <p className="text-sm text-slate-400">{totalTracked} entries tracked • {fixedCount} fixed • {variableCount} variable</p>
                 </div>
@@ -221,8 +221,8 @@ export default function Dashboard({ user, supabase }) {
           className="fixed inset-x-0 bottom-0 z-40 flex border-t border-white/8 bg-slate-950/95 backdrop-blur-md sm:hidden"
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
-          <button onClick={() => setTab('monthly')} className={`font-pixel flex-1 py-3 text-xs font-medium border-t-2 transition-colors ${tab === 'monthly' ? 'border-sky-500 text-sky-400' : 'border-transparent text-slate-500'}`}>Ledger</button>
-          <button onClick={() => setTab('balances')} className={`font-pixel flex-1 py-3 text-xs font-medium border-t-2 transition-colors ${tab === 'balances' ? 'border-sky-500 text-sky-400' : 'border-transparent text-slate-500'}`}>Balances</button>
+          <button onClick={() => setTab('monthly')} className={`font-pixel flex-1 py-3 text-xs font-medium border-t-2 transition-colors ${tab === 'monthly' ? 'border-accent text-accent' : 'border-transparent text-slate-500'}`}>Ledger</button>
+          <button onClick={() => setTab('balances')} className={`font-pixel flex-1 py-3 text-xs font-medium border-t-2 transition-colors ${tab === 'balances' ? 'border-accent text-accent' : 'border-transparent text-slate-500'}`}>Balances</button>
         </nav>
       )}
 

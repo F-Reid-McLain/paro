@@ -129,14 +129,14 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
         <div className="mb-4 flex items-center gap-2 border-2 border-white/10 bg-slate-800 p-2">
           <button
             type="button"
-            className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${mode === 'expense' ? 'bg-sky-500 text-white' : 'text-slate-300'}`}
+            className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${mode === 'expense' ? 'bg-accent text-white' : 'text-slate-300'}`}
             onClick={() => setMode('expense')}
           >
             Expense
           </button>
           <button
             type="button"
-            className={`flex-1 rounded-xl px-3 py-2 text-sm font-medium transition ${mode === 'fixed' ? 'bg-sky-500 text-white' : 'text-slate-300'}`}
+            className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${mode === 'fixed' ? 'bg-accent text-white' : 'text-slate-300'}`}
             onClick={() => setMode('fixed')}
           >
             Fixed
@@ -237,7 +237,7 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
           )}
 
           <div className="flex gap-2">
-            <button type="submit" disabled={saving} className="ml-auto rounded-lg bg-sky-500 px-4 py-2 text-white">{saving ? 'Saving…' : 'Save'}</button>
+            <button type="submit" disabled={saving} className="ml-auto rounded-lg bg-accent px-4 py-2 text-white">{saving ? 'Saving…' : 'Save'}</button>
             <button type="button" className="rounded-lg border border-white/6 px-4 py-2 text-slate-200" onClick={onClose}>Cancel</button>
           </div>
         </form>

@@ -102,7 +102,7 @@ function App() {
     <main className="min-h-screen bg-slate-950 text-slate-100">
       <div className="mx-auto flex min-h-screen max-w-6xl flex-col gap-10 px-6 py-12 lg:flex-row lg:items-center lg:justify-between lg:px-8">
         <section className="max-w-2xl space-y-6">
-          <span className="inline-flex rounded-full border border-sky-400/40 bg-sky-400/10 px-3 py-1 text-sm font-medium text-sky-200">
+          <span className="inline-flex rounded-full border border-white/20 bg-white/5 px-3 py-1 text-sm font-medium text-slate-300">
             Shared expenses, simplified
           </span>
           <div className="space-y-4">
@@ -126,14 +126,14 @@ function App() {
           <div className="mb-6 flex rounded-full border border-white/10 bg-slate-800/70 p-1">
             <button
               type="button"
-              className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition ${mode === 'signup' ? 'bg-sky-500 text-white' : 'text-slate-300'}`}
+              className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition ${mode === 'signup' ? 'bg-accent text-white' : 'text-slate-300'}`}
               onClick={() => setMode('signup')}
             >
               Create account
             </button>
             <button
               type="button"
-              className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition ${mode === 'signin' ? 'bg-sky-500 text-white' : 'text-slate-300'}`}
+              className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition ${mode === 'signin' ? 'bg-accent text-white' : 'text-slate-300'}`}
               onClick={() => setMode('signin')}
             >
               Sign in
@@ -183,7 +183,7 @@ function App() {
               <button
                 type="submit"
                 disabled={loading || !isSupabaseConfigured}
-                className="w-full rounded-2xl bg-sky-500 px-4 py-3 font-medium text-white transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:bg-slate-700"
+                className="w-full rounded-2xl bg-accent px-4 py-3 font-medium text-white transition hover:bg-accent-dark disabled:cursor-not-allowed disabled:bg-slate-700"
               >
                 {loading ? 'Working…' : mode === 'signup' ? 'Create account' : 'Sign in'}
               </button>

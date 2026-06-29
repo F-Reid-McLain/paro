@@ -1,5 +1,45 @@
 @import 'tailwindcss';
 
+/* ── Theme tokens ─────────────────────────────── */
+:root,
+[data-theme="midnight"] {
+  --paro-accent:       #0ea5e9;
+  --paro-accent-dark:  #0284c7;
+  --paro-accent-light: #38bdf8;
+  --paro-accent-muted: #7dd3fc;
+}
+[data-theme="synthwave"] {
+  --paro-accent:       #8b5cf6;
+  --paro-accent-dark:  #7c3aed;
+  --paro-accent-light: #a78bfa;
+  --paro-accent-muted: #c4b5fd;
+}
+[data-theme="ember"] {
+  --paro-accent:       #f97316;
+  --paro-accent-dark:  #ea580c;
+  --paro-accent-light: #fb923c;
+  --paro-accent-muted: #fdba74;
+}
+[data-theme="rose"] {
+  --paro-accent:       #ec4899;
+  --paro-accent-dark:  #db2777;
+  --paro-accent-light: #f472b6;
+  --paro-accent-muted: #f9a8d4;
+}
+[data-theme="neon"] {
+  --paro-accent:       #06b6d4;
+  --paro-accent-dark:  #0891b2;
+  --paro-accent-light: #22d3ee;
+  --paro-accent-muted: #67e8f9;
+}
+
+/* ── Accent utilities ─────────────────────────── */
+@utility bg-accent      { background-color: var(--paro-accent); }
+@utility bg-accent-dark { background-color: var(--paro-accent-dark); }
+@utility text-accent    { color: var(--paro-accent-light); }
+@utility text-accent-muted { color: var(--paro-accent-muted); }
+@utility border-accent  { border-color: var(--paro-accent); }
+
 :root {
   color-scheme: dark;
   font-family: Inter, 'Segoe UI', sans-serif;

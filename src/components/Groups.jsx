@@ -74,7 +74,7 @@ export default function Groups({ supabase, user, currentGroup, onGroupChange }) 
           <h3 className="text-sm text-slate-200">Join group</h3>
           <input className="mt-2 w-full rounded-none border-2 border-white/10 bg-slate-700 px-3 py-2 text-white" placeholder="Group slug" value={joinSlug} onChange={(e) => setJoinSlug(e.target.value)} disabled={!!currentGroup} />
           <div className="mt-3 text-right">
-            <button onClick={handleJoin} className="rounded-lg bg-sky-500 px-3 py-2 text-white" disabled={!!currentGroup}>Join</button>
+            <button onClick={handleJoin} className="rounded-lg bg-accent px-3 py-2 text-white" disabled={!!currentGroup}>Join</button>
           </div>
           {currentGroup ? <p className="mt-3 text-sm text-amber-300">Leave your current group before joining another one.</p> : null}
         </div>
