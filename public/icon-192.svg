@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="Paro icon">
+  <rect width="192" height="192" rx="40" fill="#020617"/>
+  <path d="M48 112c0-35.346 28.654-64 64-64s64 28.654 64 64c0 20.5-9.7 38.8-24.9 50.4L96 112l-23.1 50.4C57.7 150.8 48 132.5 48 112Z" fill="#38bdf8"/>
+  <circle cx="96" cy="90" r="18" fill="#f8fafc"/>
+  <path d="M76 132h40" stroke="#f8fafc" stroke-width="10" stroke-linecap="round"/>
+</svg>
