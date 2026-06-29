@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react'
 import { createExpense, createFixedExpense } from '../lib/api'
 
 export default function AddExpenseModal({ open, onClose, supabase, onCreated, user, currentGroup }) {
-  if (!open) return null
-
   const [mode, setMode] = useState('expense')
   const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
@@ -21,6 +19,13 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
   const [creatingGroup, setCreatingGroup] = useState(false)
   const [availableMembers, setAvailableMembers] = useState([])
   const [splitWith, setSplitWith] = useState([])
+
+  // Lock body scroll while open
+  useEffect(() => {
+    if (!open) return
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [open])
 
   useEffect(() => {
     let mounted = true
@@ -122,10 +127,13 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
     }
   }
 
+  if (!open) return null
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose}></div>
-      <div className="relative w-full max-w-lg bg-page p-6">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <div className="relative w-full max-w-lg bg-page flex flex-col max-h-[92dvh] sm:max-h-[85vh]">
+        <div className="overflow-y-auto overscroll-contain p-6">
         <div className="mb-4 flex items-center gap-2 border-2 border-def bg-card p-2">
           <button
             type="button"
@@ -262,6 +270,7 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
             }} className="rounded-lg bg-emerald-500 px-3 py-2 text-hi">Create group</button>
           </div>
         )}
+        </div>
       </div>
     </div>
   )
