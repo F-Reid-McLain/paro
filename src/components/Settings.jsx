@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import Groups from './Groups'
-import { leaveGroup, deleteGroup } from '../lib/api'
+import { leaveGroup, deleteGroup, fetchAuditLog } from '../lib/api'
 
 export default function Settings({ supabase, user, currentGroup, onGroupChange }) {
   // Profile
@@ -19,6 +19,9 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
 
   // Sign out
   const [signingOut, setSigningOut] = useState(false)
+
+  // Export
+  const [exporting, setExporting] = useState(false)
 
   // Theme
   const [activeTheme, setActiveTheme] = useState(
@@ -102,6 +105,38 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
   async function handleSignOut() {
     setSigningOut(true)
     await supabase.auth.signOut()
+  }
+
+  async function handleExportCSV() {
+    setExporting(true)
+    try {
+      const rows = await fetchAuditLog(supabase)
+      const headers = ['Date', 'Action', 'Type', 'Description', 'Category', 'Amount (USD)', 'Group']
+      const escape = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
+      const lines = [
+        headers.join(','),
+        ...rows.map((r) => [
+          r.recorded_at ? r.recorded_at.split('T')[0] : '',
+          r.action,
+          r.expense_type,
+          escape(r.description || ''),
+          escape(r.category || ''),
+          r.amount != null ? (Number(r.amount) / 100).toFixed(2) : '',
+          escape(r.group_name || ''),
+        ].join(',')),
+      ]
+      const blob = new Blob([lines.join('\n')], { type: 'text/csv' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `paro-transactions-${new Date().toISOString().split('T')[0]}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      alert(e.message || 'Failed to export')
+    } finally {
+      setExporting(false)
+    }
   }
 
   function copySlug() {
@@ -369,6 +404,27 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
 
       {/* Create / join */}
       <Groups currentGroup={currentGroup} supabase={supabase} user={user} onGroupChange={onGroupChange} />
+
+      {/* Data export */}
+      <div className="border-2 border-def bg-card p-5 space-y-3">
+        <h3 className="font-pixel text-[10px] font-semibold uppercase tracking-wider text-dim">Data</h3>
+        <p className="text-sm text-lo">
+          Download a full history of your transaction activity — including edited and deleted entries — as a CSV file.
+          Your history is preserved even after leaving a group.
+        </p>
+        <button
+          type="button"
+          onClick={handleExportCSV}
+          disabled={exporting}
+          className="flex items-center gap-2 rounded-lg bg-accent-dark px-4 py-2 text-sm font-medium text-hi disabled:opacity-60"
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z" />
+            <path d="M7.25 7.689V2a.75.75 0 0 1 1.5 0v5.689l1.97-1.97a.749.749 0 1 1 1.06 1.06l-3.25 3.25a.749.749 0 0 1-1.06 0L4.22 6.779a.749.749 0 1 1 1.06-1.06l1.97 1.97Z" />
+          </svg>
+          {exporting ? 'Exporting…' : 'Export transaction history'}
+        </button>
+      </div>
     </section>
   )
 }

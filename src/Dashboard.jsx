@@ -4,7 +4,7 @@ import Balances from './components/Balances'
 import Settings from './components/Settings'
 import AddExpenseModal from './components/AddExpenseModal'
 import FloatingButton from './components/FloatingButton'
-import { fetchExpenses, getUserGroups, getMemberProfiles, deleteExpense, deleteFixedExpense, fetchSplitFixedExpenses } from './lib/api'
+import { fetchExpenses, getUserGroups, getMemberProfiles, deleteExpense, deleteFixedExpense, fetchSplitFixedExpenses, updateExpense, updateFixedExpense } from './lib/api'
 
 function GearIcon() {
   return (
@@ -24,6 +24,9 @@ export default function Dashboard({ user, supabase }) {
   const [members, setMembers] = useState({})
   const [selectedMonth, setSelectedMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1))
   const [splitFixed, setSplitFixed] = useState([])
+  const [editingActivityId, setEditingActivityId] = useState(null)
+  const [activityDraft, setActivityDraft] = useState({})
+  const [savingActivity, setSavingActivity] = useState(false)
 
   const totalTracked = expenses.length + fixedExpenses.length
   const totalAmount = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0) + fixedExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
@@ -77,6 +80,44 @@ export default function Dashboard({ user, supabase }) {
     } catch (e) {
       console.error('delete expense', e)
       alert(e.message || 'Failed to delete')
+    }
+  }
+
+  function startActivityEdit(entry) {
+    setActivityDraft({
+      description: entry.description || '',
+      amount: (Number(entry.amount) / 100).toFixed(2),
+      date: entry.date ? entry.date.split('T')[0] : new Date().toISOString().split('T')[0],
+      category: entry.category === 'Fixed' ? '' : (entry.category || ''),
+    })
+    setEditingActivityId(entry.id)
+  }
+
+  async function handleSaveActivityEdit(entry) {
+    const parsed = parseFloat(activityDraft.amount)
+    if (Number.isNaN(parsed) || parsed <= 0) { alert('Enter a valid amount'); return }
+    setSavingActivity(true)
+    try {
+      if (entry.is_fixed) {
+        await updateFixedExpense(supabase, entry.id, {
+          name: activityDraft.description || entry.description,
+          amount: Math.round(parsed * 100),
+        })
+      } else {
+        await updateExpense(supabase, entry.id, {
+          description: activityDraft.description || null,
+          amount: Math.round(parsed * 100),
+          date: activityDraft.date,
+          category: activityDraft.category || null,
+        })
+      }
+      setEditingActivityId(null)
+      loadDashboardData(currentGroup?.id)
+    } catch (e) {
+      console.error('update activity entry', e)
+      alert(e.message || 'Failed to save')
+    } finally {
+      setSavingActivity(false)
     }
   }
 
@@ -191,15 +232,74 @@ export default function Dashboard({ user, supabase }) {
               {recentActivity.length ? (
                 <ul className="space-y-2">
                   {recentActivity.map((entry) => (
-                    <li key={entry.id} className="flex items-center justify-between border-2 border-def bg-deep px-3 py-2">
-                      <div>
-                        <p className="text-sm font-medium text-hi">{entry.description || 'Expense'}</p>
-                        <p className="text-xs text-dim">{entry.is_fixed ? 'Fixed' : 'Variable'} • {entry.category || 'Other'}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold text-hi">${(Number(entry.amount) / 100).toFixed(2)}</p>
-                        <p className="text-[11px] text-dim">{new Date(entry.date || entry.created_at).toLocaleDateString()}</p>
-                      </div>
+                    <li key={entry.id} className={`border-2 bg-deep ${editingActivityId === entry.id ? 'border-accent p-3 space-y-2' : 'border-def px-3 py-2'}`}>
+                      {editingActivityId === entry.id ? (
+                        <>
+                          <input
+                            className="w-full rounded-none border-2 border-def bg-card px-3 py-1.5 text-sm text-hi"
+                            placeholder="Description"
+                            value={activityDraft.description}
+                            onChange={(e) => setActivityDraft((d) => ({ ...d, description: e.target.value }))}
+                          />
+                          <div className="grid grid-cols-2 gap-2">
+                            <input
+                              type="number" inputMode="decimal" step="0.01"
+                              className="w-full rounded-none border-2 border-def bg-card px-3 py-1.5 text-sm text-hi"
+                              placeholder="Amount"
+                              value={activityDraft.amount}
+                              onChange={(e) => setActivityDraft((d) => ({ ...d, amount: e.target.value }))}
+                            />
+                            {!entry.is_fixed && (
+                              <input
+                                type="date"
+                                className="w-full rounded-none border-2 border-def bg-card px-3 py-1.5 text-sm text-hi"
+                                value={activityDraft.date}
+                                onChange={(e) => setActivityDraft((d) => ({ ...d, date: e.target.value }))}
+                              />
+                            )}
+                          </div>
+                          {!entry.is_fixed && (
+                            <select
+                              className="w-full rounded-none border-2 border-def bg-card px-3 py-1.5 text-sm text-hi"
+                              value={activityDraft.category}
+                              onChange={(e) => setActivityDraft((d) => ({ ...d, category: e.target.value }))}
+                            >
+                              <option value="">No category</option>
+                              <option value="Food">Food</option>
+                              <option value="Housing">Housing</option>
+                              <option value="Transport">Transport</option>
+                              <option value="Utilities">Utilities</option>
+                              <option value="Entertainment">Entertainment</option>
+                              <option value="Shopping">Shopping</option>
+                              <option value="Other">Other</option>
+                            </select>
+                          )}
+                          <div className="flex justify-end gap-2">
+                            <button type="button" onClick={() => setEditingActivityId(null)} className="rounded-lg border border-def px-3 py-1.5 text-xs text-lo">Cancel</button>
+                            <button type="button" disabled={savingActivity} onClick={() => handleSaveActivityEdit(entry)} className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-hi disabled:opacity-60">{savingActivity ? 'Saving…' : 'Save'}</button>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-hi">{entry.description || 'Expense'}</p>
+                            <p className="text-xs text-dim">{entry.is_fixed ? 'Fixed' : 'Variable'} • {entry.category || 'Other'}</p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <p className="text-sm font-semibold text-hi">${(Number(entry.amount) / 100).toFixed(2)}</p>
+                              <p className="text-[11px] text-dim">{new Date(entry.date || entry.created_at).toLocaleDateString()}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => startActivityEdit(entry)}
+                              className="shrink-0 rounded-lg border border-def px-2 py-1 text-xs text-lo hover:bg-input hover:text-hi transition-colors"
+                            >
+                              Edit
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>

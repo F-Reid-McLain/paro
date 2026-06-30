@@ -348,4 +348,33 @@ begin
 end;
 $$;
 
+-- ===== expense_audit_log =====
+-- User-owned immutable log. Persists after leaving/deleting groups.
+-- Records every create, update, delete with a data snapshot.
+
+create table if not exists public.expense_audit_log (
+  id           uuid primary key default gen_random_uuid(),
+  user_id      uuid not null references auth.users(id) on delete cascade,
+  group_id     uuid,        -- nullable: group may be deleted later
+  group_name   text,        -- snapshot so name is preserved even if group deleted
+  expense_id   uuid,        -- nullable: expense may be deleted later
+  action       text not null check (action in ('created', 'updated', 'deleted')),
+  expense_type text not null default 'expense' check (expense_type in ('expense', 'fixed')),
+  description  text,
+  amount       numeric,
+  category     text,
+  date         date,
+  recorded_at  timestamptz default now()
+);
+
+alter table public.expense_audit_log enable row level security;
+
+drop policy if exists "Users can view own audit log" on public.expense_audit_log;
+create policy "Users can view own audit log" on public.expense_audit_log
+for select using (auth.uid() = user_id);
+
+drop policy if exists "Users can insert own audit log" on public.expense_audit_log;
+create policy "Users can insert own audit log" on public.expense_audit_log
+for insert with check (auth.uid() = user_id);
+
 -- End combined schema

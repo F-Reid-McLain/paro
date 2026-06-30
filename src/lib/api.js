@@ -1,3 +1,23 @@
+// Fire-and-forget audit log write — never throws, never blocks the caller
+async function auditLog(supabase, entry) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    await supabase.from('expense_audit_log').insert({ user_id: user.id, ...entry })
+  } catch (e) {
+    console.warn('audit log failed (non-fatal)', e)
+  }
+}
+
+export async function fetchAuditLog(supabase) {
+  const { data, error } = await supabase
+    .from('expense_audit_log')
+    .select('*')
+    .order('recorded_at', { ascending: false })
+  if (error) throw error
+  return data || []
+}
+
 export async function fetchExpenses(supabase, opts = {}) {
   const { fromDate, toDate } = opts
   let query = supabase.from('expenses').select('*')
@@ -92,12 +112,38 @@ export async function createExpense(supabase, expense, shares = []) {
     if (sharesError) throw sharesError
   }
 
+  // Fetch group name for the log snapshot (non-blocking)
+  supabase.from('groups').select('name').eq('id', expData.group_id).single()
+    .then(({ data: g }) => auditLog(supabase, {
+      group_id: expData.group_id,
+      group_name: g?.name || null,
+      expense_id: expData.id,
+      action: 'created',
+      expense_type: 'expense',
+      description: expData.description,
+      amount: expData.amount,
+      category: expData.category,
+      date: expData.date,
+    }))
+
   return expData
 }
 
 export async function createFixedExpense(supabase, fixedExpense) {
   const { data, error } = await supabase.from('fixed_expenses').insert(fixedExpense).select().single()
   if (error) throw error
+  supabase.from('groups').select('name').eq('id', data.group_id).single()
+    .then(({ data: g }) => auditLog(supabase, {
+      group_id: data.group_id,
+      group_name: g?.name || null,
+      expense_id: data.id,
+      action: 'created',
+      expense_type: 'fixed',
+      description: data.name,
+      amount: data.amount,
+      category: 'Fixed',
+      date: data.start_date || null,
+    }))
   return data
 }
 
@@ -156,34 +202,81 @@ export async function joinGroup(supabase, { slug }) {
 
 export async function updateExpense(supabase, expenseId, fields) {
   const { data, error } = await supabase
-    .from('expenses')
-    .update(fields)
-    .eq('id', expenseId)
-    .select()
-    .single()
+    .from('expenses').update(fields).eq('id', expenseId).select().single()
   if (error) throw error
+  supabase.from('groups').select('name').eq('id', data.group_id).single()
+    .then(({ data: g }) => auditLog(supabase, {
+      group_id: data.group_id,
+      group_name: g?.name || null,
+      expense_id: data.id,
+      action: 'updated',
+      expense_type: 'expense',
+      description: data.description,
+      amount: data.amount,
+      category: data.category,
+      date: data.date,
+    }))
   return data
 }
 
 export async function deleteExpense(supabase, expenseId) {
+  // Snapshot before deleting so the log has the data
+  const { data: snap } = await supabase.from('expenses').select('*').eq('id', expenseId).single()
   const { error } = await supabase.from('expenses').delete().eq('id', expenseId)
   if (error) throw error
+  if (snap) {
+    supabase.from('groups').select('name').eq('id', snap.group_id).single()
+      .then(({ data: g }) => auditLog(supabase, {
+        group_id: snap.group_id,
+        group_name: g?.name || null,
+        expense_id: null,
+        action: 'deleted',
+        expense_type: 'expense',
+        description: snap.description,
+        amount: snap.amount,
+        category: snap.category,
+        date: snap.date,
+      }))
+  }
 }
 
 export async function updateFixedExpense(supabase, id, fields) {
   const { data, error } = await supabase
-    .from('fixed_expenses')
-    .update(fields)
-    .eq('id', id)
-    .select()
-    .single()
+    .from('fixed_expenses').update(fields).eq('id', id).select().single()
   if (error) throw error
+  supabase.from('groups').select('name').eq('id', data.group_id).single()
+    .then(({ data: g }) => auditLog(supabase, {
+      group_id: data.group_id,
+      group_name: g?.name || null,
+      expense_id: data.id,
+      action: 'updated',
+      expense_type: 'fixed',
+      description: data.name,
+      amount: data.amount,
+      category: 'Fixed',
+      date: data.start_date || null,
+    }))
   return data
 }
 
 export async function deleteFixedExpense(supabase, fixedExpenseId) {
+  const { data: snap } = await supabase.from('fixed_expenses').select('*').eq('id', fixedExpenseId).single()
   const { error } = await supabase.from('fixed_expenses').delete().eq('id', fixedExpenseId)
   if (error) throw error
+  if (snap) {
+    supabase.from('groups').select('name').eq('id', snap.group_id).single()
+      .then(({ data: g }) => auditLog(supabase, {
+        group_id: snap.group_id,
+        group_name: g?.name || null,
+        expense_id: null,
+        action: 'deleted',
+        expense_type: 'fixed',
+        description: snap.name,
+        amount: snap.amount,
+        category: 'Fixed',
+        date: snap.start_date || null,
+      }))
+  }
 }
 
 export async function fetchSplitFixedExpenses(supabase, { groupId, userId, periodLabel }) {
