@@ -40,6 +40,10 @@ drop policy if exists "Users can insert own profile" on public.profiles;
 create policy "Users can insert own profile" on public.profiles
 for insert with check (auth.uid() = id);
 
+-- Migrations: add columns that may not exist on older installs
+alter table public.profiles add column if not exists currency text default 'USD';
+alter table public.profiles add column if not exists venmo_handle text;
+
 -- ===== groups =====
 
 create table if not exists public.groups (
