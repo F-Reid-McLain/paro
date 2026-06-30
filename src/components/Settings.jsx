@@ -41,6 +41,9 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
     { id: 'rose',     name: 'Rose',     bg: '#110a0e', accent: '#f43f5e' },
     { id: 'ash',      name: 'Ash',      bg: '#111111', accent: '#6b7280' },
     { id: 'blackout', name: 'Blackout', bg: '#000000', accent: '#22c55e' },
+    { id: 'chalk',    name: 'Chalk',    bg: '#f8f9fa', accent: '#3b82f6' },
+    { id: 'paper',    name: 'Paper',    bg: '#f5f0e8', accent: '#c2410c' },
+    { id: 'mint',     name: 'Mint',     bg: '#f0f7f4', accent: '#059669' },
   ]
 
   useEffect(() => {
@@ -204,7 +207,7 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
       {/* Appearance */}
       <div className="border-2 border-def bg-card p-5 space-y-4">
         <h3 className="font-pixel text-[10px] font-semibold uppercase tracking-wider text-dim">Appearance</h3>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-4 gap-3">
           {THEMES.map((t) => {
             const active = activeTheme === t.id
             return (
@@ -219,7 +222,7 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
                   className="relative h-12 w-full border-2"
                   style={{
                     backgroundColor: t.bg,
-                    borderColor: active ? 'var(--paro-text-hi)' : 'transparent',
+                    borderColor: active ? 'var(--paro-text-hi)' : 'var(--paro-border)',
                   }}
                 >
                   <div
