@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { leaveGroup, deleteGroup, fetchAuditLog, createGroup, joinGroup } from '../lib/api'
+import { leaveGroup, deleteGroup, fetchAuditLog, createGroup, joinGroup, deleteAccount } from '../lib/api'
 import { toast } from '../lib/toast'
 
 export default function Settings({ supabase, user, currentGroup, onGroupChange }) {
@@ -24,12 +24,21 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
   const [groupMembers, setGroupMembers] = useState([])
   const [copied, setCopied] = useState(false)
 
-  // Sign out / export / theme
+  // Sign out / export / theme / prefs / delete
   const [signingOut, setSigningOut] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [activeTheme, setActiveTheme] = useState(
     () => localStorage.getItem('paro-theme') || 'midnight'
   )
+  const [defaultTab, setDefaultTab] = useState(
+    () => localStorage.getItem('paro-default-tab') || 'monthly'
+  )
+  const [currency, setCurrency] = useState(
+    () => localStorage.getItem('paro-currency') || 'USD'
+  )
+  const [savingCurrency, setSavingCurrency] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState('')
+  const [deleting, setDeleting] = useState(false)
 
   const THEMES = [
     { id: 'midnight', name: 'Midnight', bg: '#020617', accent: '#0ea5e9' },
@@ -52,10 +61,47 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
     document.documentElement.dataset.theme = themeId
   }
 
+  function handleDefaultTabChange(tabId) {
+    setDefaultTab(tabId)
+    localStorage.setItem('paro-default-tab', tabId)
+  }
+
+  async function handleCurrencyChange(cur) {
+    setCurrency(cur)
+    localStorage.setItem('paro-currency', cur)
+    setSavingCurrency(true)
+    try {
+      const { error } = await supabase.from('profiles').update({ currency: cur }).eq('id', user.id)
+      if (error) throw error
+    } catch (e) {
+      toast(e.message || 'Failed to save currency preference')
+    } finally {
+      setSavingCurrency(false)
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (deleteConfirm !== 'DELETE') return
+    setDeleting(true)
+    try {
+      await deleteAccount(supabase)
+      await supabase.auth.signOut()
+    } catch (e) {
+      toast(e.message || 'Failed to delete account')
+      setDeleting(false)
+    }
+  }
+
   useEffect(() => {
     if (!supabase || !user?.id) return
-    supabase.from('profiles').select('full_name, email').eq('id', user.id).single()
-      .then(({ data }) => { if (data?.full_name) setProfileName(data.full_name) })
+    supabase.from('profiles').select('full_name, email, currency').eq('id', user.id).single()
+      .then(({ data }) => {
+        if (data?.full_name) setProfileName(data.full_name)
+        if (data?.currency) {
+          setCurrency(data.currency)
+          localStorage.setItem('paro-currency', data.currency)
+        }
+      })
       .catch(console.error)
   }, [supabase, user?.id])
 
@@ -268,6 +314,25 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
           </button>
         </div>
 
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium text-hi">Default currency</p>
+            <p className="text-xs text-dim">Used when adding new expenses</p>
+          </div>
+          <select
+            value={currency}
+            onChange={(e) => handleCurrencyChange(e.target.value)}
+            disabled={savingCurrency}
+            className="rounded-none border-2 border-def bg-deep px-3 py-2 text-sm text-hi disabled:opacity-60"
+          >
+            <option value="USD">USD — US Dollar</option>
+            <option value="EUR">EUR — Euro</option>
+            <option value="GBP">GBP — British Pound</option>
+            <option value="CAD">CAD — Canadian Dollar</option>
+            <option value="AUD">AUD — Australian Dollar</option>
+          </select>
+        </div>
+
         <button
           type="button"
           onClick={handleSignOut}
@@ -284,6 +349,30 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
       {/* Appearance */}
       <div className="border-2 border-def bg-card p-5 space-y-4">
         <h3 className="font-pixel text-[10px] font-semibold uppercase tracking-wider text-dim">Appearance</h3>
+
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium text-hi">Default tab</p>
+            <p className="text-xs text-dim">Which view opens on launch</p>
+          </div>
+          <div className="flex border-2 border-def overflow-hidden">
+            <button
+              type="button"
+              onClick={() => handleDefaultTabChange('monthly')}
+              className={`px-4 py-1.5 text-xs font-medium transition-colors ${defaultTab === 'monthly' ? 'bg-accent text-hi' : 'bg-deep text-lo hover:bg-input'}`}
+            >
+              Ledger
+            </button>
+            <button
+              type="button"
+              onClick={() => handleDefaultTabChange('balances')}
+              className={`px-4 py-1.5 text-xs font-medium transition-colors ${defaultTab === 'balances' ? 'bg-accent text-hi' : 'bg-deep text-lo hover:bg-input'}`}
+            >
+              Balances
+            </button>
+          </div>
+        </div>
+
         <div className="grid grid-cols-4 gap-3">
           {THEMES.map((t) => {
             const active = activeTheme === t.id
@@ -516,6 +605,35 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
           </svg>
           {exporting ? 'Exporting…' : 'Export transaction history'}
         </button>
+      </div>
+
+      {/* Danger zone */}
+      <div className="border-2 border-red-500/30 bg-card p-5 space-y-4">
+        <h3 className="font-pixel text-[10px] font-semibold uppercase tracking-wider text-red-400">Danger zone</h3>
+        <div>
+          <p className="text-sm font-medium text-hi">Delete account</p>
+          <p className="mt-1 text-xs text-dim">
+            Permanently deletes your account and all associated data. This cannot be undone.
+            Type <span className="font-mono font-semibold text-lo">DELETE</span> to confirm.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Type DELETE to confirm"
+            value={deleteConfirm}
+            onChange={(e) => setDeleteConfirm(e.target.value)}
+            className="flex-1 rounded-none border-2 border-red-500/30 bg-deep px-3 py-2 text-sm text-hi placeholder:text-faint focus:border-red-500/60 focus:outline-none"
+          />
+          <button
+            type="button"
+            onClick={handleDeleteAccount}
+            disabled={deleteConfirm !== 'DELETE' || deleting}
+            className="rounded-lg border border-red-500/40 px-4 py-2 text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {deleting ? 'Deleting…' : 'Delete account'}
+          </button>
+        </div>
       </div>
     </section>
   )

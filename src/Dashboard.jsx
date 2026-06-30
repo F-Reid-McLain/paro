@@ -16,7 +16,7 @@ function GearIcon() {
 }
 
 export default function Dashboard({ user, supabase }) {
-  const [tab, setTab] = useState('monthly')
+  const [tab, setTab] = useState(() => localStorage.getItem('paro-default-tab') || 'monthly')
   const [openAdd, setOpenAdd] = useState(false)
   const [expenses, setExpenses] = useState([])
   const [fixedExpenses, setFixedExpenses] = useState([])

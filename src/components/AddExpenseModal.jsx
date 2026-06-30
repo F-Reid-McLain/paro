@@ -99,7 +99,7 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
           period,
           start_date: startDate,
           end_date: endDate || null,
-          currency: 'USD',
+          currency: localStorage.getItem('paro-currency') || 'USD',
           is_split: isSplit,
         }
         const created = await createFixedExpense(supabase, payload)

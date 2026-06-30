@@ -561,3 +561,8 @@ export async function settleUp(supabase, { groupId, withUserId, currentUserId })
     if (e2) throw e2
   }
 }
+
+export async function deleteAccount(supabase) {
+  const { error } = await supabase.rpc('delete_own_account')
+  if (error) throw error
+}

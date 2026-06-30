@@ -9,6 +9,7 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   full_name text,
   email text,
+  currency text default 'USD',
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -384,5 +385,13 @@ for select using (auth.uid() = user_id);
 drop policy if exists "Users can insert own audit log" on public.expense_audit_log;
 create policy "Users can insert own audit log" on public.expense_audit_log
 for insert with check (auth.uid() = user_id);
+
+-- RPC: delete own account — cascades to all user data via FK on delete cascade
+create or replace function public.delete_own_account()
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  delete from auth.users where id = auth.uid();
+end;
+$$;
 
 -- End combined schema
