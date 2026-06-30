@@ -80,15 +80,32 @@ export default function Dashboard({ user, supabase }) {
     }
   }
 
+  function handleGroupChange(group) {
+    setCurrentGroup(group)
+    if (group?.id) {
+      localStorage.setItem('paro-group-id', group.id)
+      loadDashboardData(group.id)
+      getMemberProfiles(supabase, group.id).then(setMembers).catch(console.error)
+    } else {
+      localStorage.removeItem('paro-group-id')
+      setExpenses([])
+      setFixedExpenses([])
+      setSplitFixed([])
+      setMembers({})
+    }
+  }
+
   useEffect(() => {
     async function init() {
       try {
         const groups = await getUserGroups(supabase)
-        if (groups.length) {
-          setCurrentGroup(groups[0])
-          loadDashboardData(groups[0].id)
-          getMemberProfiles(supabase, groups[0].id).then(setMembers).catch(console.error)
-        }
+        if (!groups.length) return
+        const storedId = localStorage.getItem('paro-group-id')
+        const group = (storedId && groups.find((g) => g.id === storedId)) || groups[0]
+        setCurrentGroup(group)
+        localStorage.setItem('paro-group-id', group.id)
+        loadDashboardData(group.id)
+        getMemberProfiles(supabase, group.id).then(setMembers).catch(console.error)
       } catch (e) {
         console.error('init groups', e)
       }
@@ -195,10 +212,8 @@ export default function Dashboard({ user, supabase }) {
 
         {tab === 'settings' ? (
           <Settings supabase={supabase} user={user} currentGroup={currentGroup} onGroupChange={(g) => {
-            setCurrentGroup(g)
+            handleGroupChange(g)
             setTab('monthly')
-            loadDashboardData(g?.id)
-            if (g?.id) getMemberProfiles(supabase, g.id).then(setMembers).catch(console.error)
           }} />
         ) : tab === 'balances' ? (
           <Balances supabase={supabase} user={user} currentGroup={currentGroup} members={members} onRefresh={() => loadDashboardData(currentGroup?.id)} />

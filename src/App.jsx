@@ -90,6 +90,7 @@ function App() {
       return
     }
 
+    localStorage.removeItem('paro-group-id')
     setUser(null)
     setMessage('Signed out.')
   }
