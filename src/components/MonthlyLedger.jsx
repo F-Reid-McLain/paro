@@ -181,11 +181,11 @@ export default function MonthlyLedger({
 
   function getCategoryBadge(category = 'Other') {
     const c = String(category).toLowerCase()
-    if (c.includes('rent') || c.includes('home') || c.includes('housing')) return 'border-violet-400/30 bg-violet-500/15 text-violet-200'
-    if (c.includes('food') || c.includes('grocer') || c.includes('dine')) return 'border-amber-400/30 bg-amber-500/15 text-amber-200'
-    if (c.includes('transport') || c.includes('gas') || c.includes('travel')) return 'border-sky-400/30 bg-sky-500/15 text-sky-200'
-    if (c.includes('bill') || c.includes('utility') || c.includes('internet')) return 'border-emerald-400/30 bg-emerald-500/15 text-emerald-200'
-    if (c.includes('fixed')) return 'border-emerald-400/30 bg-emerald-500/15 text-emerald-200'
+    if (c.includes('rent') || c.includes('home') || c.includes('housing')) return 'border-violet-400/40 bg-violet-500/10 text-hi'
+    if (c.includes('food') || c.includes('grocer') || c.includes('dine')) return 'border-amber-400/40 bg-amber-500/10 text-hi'
+    if (c.includes('transport') || c.includes('gas') || c.includes('travel')) return 'border-sky-400/40 bg-sky-500/10 text-hi'
+    if (c.includes('bill') || c.includes('utility') || c.includes('internet')) return 'border-emerald-400/40 bg-emerald-500/10 text-hi'
+    if (c.includes('fixed')) return 'border-emerald-400/40 bg-emerald-500/10 text-hi'
     return 'border-def bg-input text-lo'
   }
 
