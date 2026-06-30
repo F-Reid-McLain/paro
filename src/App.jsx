@@ -1,8 +1,16 @@
 import { useEffect, useState } from 'react'
+import { useRegisterSW } from 'virtual:pwa-register/react'
 import { getSupabaseConfigMessage, isSupabaseConfigured, supabase } from './lib/supabase'
 import Dashboard from './Dashboard'
 
 function App() {
+  const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW({
+    onRegisteredSW(_url, registration) {
+      // Poll for updates every 60 seconds while the app is open
+      if (registration) setInterval(() => registration.update(), 60 * 1000)
+    },
+  })
+
   const [mode, setMode] = useState('signup')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -96,7 +104,23 @@ function App() {
   }
 
   if (user) {
-    return <Dashboard user={user} supabase={supabase} />
+    return (
+      <>
+        {needRefresh && (
+          <div className="fixed top-0 left-0 right-0 z-[200] flex items-center justify-between gap-4 bg-accent px-4 py-2.5 text-sm font-medium text-hi shadow-lg">
+            <span>New version available</span>
+            <button
+              type="button"
+              onClick={() => updateServiceWorker(true)}
+              className="rounded-lg border border-white/30 px-3 py-1 text-xs font-semibold hover:bg-white/10 transition-colors"
+            >
+              Update now
+            </button>
+          </div>
+        )}
+        <Dashboard user={user} supabase={supabase} />
+      </>
+    )
   }
 
   return (
