@@ -22,6 +22,7 @@ export default function MonthlyLedger({
   splitFixed = [], selectedMonth, onMonthChange,
 }) {
   const [userShares, setUserShares] = useState([])
+  const [allSharesMap, setAllSharesMap] = useState({})
   const [openMenuId, setOpenMenuId] = useState(null)
   const [menuSharesCache, setMenuSharesCache] = useState({})
   const [loadingMenuShares, setLoadingMenuShares] = useState(false)
@@ -36,17 +37,32 @@ export default function MonthlyLedger({
 
   useEffect(() => {
     let mounted = true
-    async function loadUserShares() {
-      if (!supabase || !user?.id || !expenses.length) { if (mounted) setUserShares([]); return }
+    async function loadShares() {
+      if (!supabase || !user?.id || !expenses.length) {
+        if (mounted) { setUserShares([]); setAllSharesMap({}) }
+        return
+      }
+      const allIds = expenses.map((e) => e.id)
+      const splitIds = expenses.filter((e) => e.is_split).map((e) => e.id)
       try {
-        const { data, error } = await supabase
-          .from('expense_shares').select('*')
-          .in('expense_id', expenses.map((e) => e.id))
-          .eq('user_id', user.id)
-        if (mounted) setUserShares(error ? [] : data || [])
-      } catch (e) { console.error('load user shares', e) }
+        const [userResult, allResult] = await Promise.all([
+          supabase.from('expense_shares').select('*').in('expense_id', allIds).eq('user_id', user.id),
+          splitIds.length
+            ? supabase.from('expense_shares').select('expense_id, settled').in('expense_id', splitIds)
+            : Promise.resolve({ data: [] }),
+        ])
+        if (!mounted) return
+        setUserShares(userResult.error ? [] : userResult.data || [])
+        const map = {}
+        for (const s of allResult.data || []) {
+          if (!map[s.expense_id]) map[s.expense_id] = { total: 0, paid: 0 }
+          map[s.expense_id].total++
+          if (s.settled) map[s.expense_id].paid++
+        }
+        setAllSharesMap(map)
+      } catch (e) { console.error('load shares', e) }
     }
-    loadUserShares()
+    loadShares()
     return () => { mounted = false }
   }, [supabase, user?.id, expenses])
 
@@ -265,8 +281,11 @@ export default function MonthlyLedger({
       )
     }
 
+    const shareInfo = allSharesMap[e.id]
+    const allPaid = !e.is_split || !shareInfo || shareInfo.paid === shareInfo.total
+
     return (
-      <li key={e.id} className="relative border-2 border-def bg-deep p-2.5">
+      <li key={e.id} className={`relative border-2 bg-deep p-2.5 ${allPaid ? 'border-def' : 'border-amber-400/60'}`}>
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -293,9 +312,13 @@ export default function MonthlyLedger({
             {myShare ? (
               myShare.settled
                 ? <div className="text-xs text-emerald-300">Settled</div>
-                : <div className="text-xs text-amber-300">You owe ${(myShare.amount / 100).toFixed(2)}</div>
+                : <div className="text-xs text-amber-400">You owe ${(myShare.amount / 100).toFixed(2)}</div>
             ) : e.is_split && e.payer_id === user.id ? (
-              <div className="text-xs text-dim">You paid</div>
+              shareInfo
+                ? <div className={`text-xs ${allPaid ? 'text-emerald-300' : 'text-amber-400'}`}>
+                    {allPaid ? 'All paid' : `${shareInfo.paid}/${shareInfo.total} paid`}
+                  </div>
+                : <div className="text-xs text-dim">You paid</div>
             ) : null}
           </div>
 
