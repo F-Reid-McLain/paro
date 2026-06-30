@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import Groups from './Groups'
-import { leaveGroup, deleteGroup, fetchAuditLog } from '../lib/api'
+import { leaveGroup, deleteGroup, fetchAuditLog, createGroup, joinGroup } from '../lib/api'
 import { toast } from '../lib/toast'
 
 export default function Settings({ supabase, user, currentGroup, onGroupChange }) {
@@ -8,32 +7,29 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
   const [profileName, setProfileName] = useState('')
   const [savingName, setSavingName] = useState(false)
 
-  // Group members + invite
-  const [groupMembers, setGroupMembers] = useState([])
-  const [copied, setCopied] = useState(false)
-
-  // Groups list
+  // Groups
   const [groups, setGroups] = useState([])
   const [loadingGroups, setLoadingGroups] = useState(false)
   const [updates, setUpdates] = useState({})
   const [acting, setActing] = useState(null)
 
-  // Sign out
+  // Create / join
+  const [newGroupName, setNewGroupName] = useState('')
+  const [newGroupSlug, setNewGroupSlug] = useState('')
+  const [joinSlug, setJoinSlug] = useState('')
+  const [creatingGroup, setCreatingGroup] = useState(false)
+  const [joiningGroup, setJoiningGroup] = useState(false)
+
+  // Active group members + invite
+  const [groupMembers, setGroupMembers] = useState([])
+  const [copied, setCopied] = useState(false)
+
+  // Sign out / export / theme
   const [signingOut, setSigningOut] = useState(false)
-
-  // Export
   const [exporting, setExporting] = useState(false)
-
-  // Theme
   const [activeTheme, setActiveTheme] = useState(
     () => localStorage.getItem('paro-theme') || 'midnight'
   )
-
-  function handleThemeChange(themeId) {
-    setActiveTheme(themeId)
-    localStorage.setItem('paro-theme', themeId)
-    document.documentElement.dataset.theme = themeId
-  }
 
   const THEMES = [
     { id: 'midnight', name: 'Midnight', bg: '#020617', accent: '#0ea5e9' },
@@ -49,6 +45,12 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
     { id: 'paper',    name: 'Paper',    bg: '#f5f0e8', accent: '#c2410c' },
     { id: 'mint',     name: 'Mint',     bg: '#f0f7f4', accent: '#059669' },
   ]
+
+  function handleThemeChange(themeId) {
+    setActiveTheme(themeId)
+    localStorage.setItem('paro-theme', themeId)
+    document.documentElement.dataset.theme = themeId
+  }
 
   useEffect(() => {
     if (!supabase || !user?.id) return
@@ -108,47 +110,47 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
     await supabase.auth.signOut()
   }
 
-  async function handleExportCSV() {
-    setExporting(true)
+  async function handleCreate() {
+    if (currentGroup) { toast('Leave your current group before creating a new one.'); return }
+    if (!newGroupName.trim()) { toast('Group name required'); return }
+    setCreatingGroup(true)
     try {
-      const rows = await fetchAuditLog(supabase)
-      const headers = ['Date', 'Action', 'Type', 'Description', 'Category', 'Amount (USD)', 'Group']
-      const escape = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
-      const lines = [
-        headers.join(','),
-        ...rows.map((r) => [
-          r.recorded_at ? r.recorded_at.split('T')[0] : '',
-          r.action,
-          r.expense_type,
-          escape(r.description || ''),
-          escape(r.category || ''),
-          r.amount != null ? (Number(r.amount) / 100).toFixed(2) : '',
-          escape(r.group_name || ''),
-        ].join(',')),
-      ]
-      const blob = new Blob([lines.join('\n')], { type: 'text/csv' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `paro-transactions-${new Date().toISOString().split('T')[0]}.csv`
-      a.click()
-      URL.revokeObjectURL(url)
+      const g = await createGroup(supabase, {
+        name: newGroupName.trim(),
+        slug: newGroupSlug.trim() || newGroupName.trim().toLowerCase().replace(/\s+/g, '-'),
+        owner_id: user.id,
+      })
+      setNewGroupName('')
+      setNewGroupSlug('')
+      setGroups((prev) => [g, ...prev])
+      onGroupChange && onGroupChange(g)
     } catch (e) {
-      toast(e.message || 'Failed to export')
+      console.error(e)
+      toast(e.message || 'Failed to create group')
     } finally {
-      setExporting(false)
+      setCreatingGroup(false)
     }
   }
 
-  function copySlug() {
-    navigator.clipboard.writeText(currentGroup.slug).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
+  async function handleJoin() {
+    if (currentGroup) { toast('Leave your current group before joining another.'); return }
+    if (!joinSlug.trim()) { toast('Enter a group code to join'); return }
+    setJoiningGroup(true)
+    try {
+      const g = await joinGroup(supabase, { slug: joinSlug.trim() })
+      setJoinSlug('')
+      setGroups((prev) => [g, ...prev])
+      onGroupChange && onGroupChange(g)
+    } catch (e) {
+      console.error(e)
+      toast(e.message || 'Failed to join group')
+    } finally {
+      setJoiningGroup(false)
+    }
   }
 
   async function handleLeave(group) {
-    if (!window.confirm(`Leave "${group.name}"? You can rejoin with the group slug.`)) return
+    if (!window.confirm(`Leave "${group.name}"? You can rejoin with the group code.`)) return
     setActing(group.id)
     try {
       await leaveGroup(supabase, { groupId: group.id, userId: user.id })
@@ -188,6 +190,45 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
     } catch (e) {
       toast(e.message || 'Unable to update group name')
     }
+  }
+
+  async function handleExportCSV() {
+    setExporting(true)
+    try {
+      const rows = await fetchAuditLog(supabase)
+      const headers = ['Date', 'Action', 'Type', 'Description', 'Category', 'Amount (USD)', 'Group']
+      const escape = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
+      const lines = [
+        headers.join(','),
+        ...rows.map((r) => [
+          r.recorded_at ? r.recorded_at.split('T')[0] : '',
+          r.action,
+          r.expense_type,
+          escape(r.description || ''),
+          escape(r.category || ''),
+          r.amount != null ? (Number(r.amount) / 100).toFixed(2) : '',
+          escape(r.group_name || ''),
+        ].join(',')),
+      ]
+      const blob = new Blob([lines.join('\n')], { type: 'text/csv' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `paro-transactions-${new Date().toISOString().split('T')[0]}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      toast(e.message || 'Failed to export')
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  function copySlug() {
+    navigator.clipboard.writeText(currentGroup.slug).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
   }
 
   return (
@@ -253,7 +294,6 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
                 onClick={() => handleThemeChange(t.id)}
                 className={`flex flex-col items-center gap-2 rounded-lg p-2 transition-opacity ${active ? 'opacity-100' : 'opacity-50 hover:opacity-80'}`}
               >
-                {/* Swatch: bg color fills square, accent dot in corner */}
                 <div
                   className="relative h-12 w-full border-2"
                   style={{
@@ -273,72 +313,80 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
         </div>
       </div>
 
-      {/* Active group — members + invite */}
-      {currentGroup && (
-        <div className="border-2 border-def bg-card p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-pixel text-[10px] font-semibold uppercase tracking-wider text-dim">Active group</h3>
-            <span className="text-sm font-medium text-hi">{currentGroup.name}</span>
+      {/* Groups */}
+      <div className="border-2 border-def bg-card p-5 space-y-5">
+        <h3 className="font-pixel text-[10px] font-semibold uppercase tracking-wider text-dim">Groups</h3>
+
+        {/* Create + Join — compact two-column row */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="space-y-2">
+            <p className="text-[11px] font-medium text-dim">Create new</p>
+            <input
+              className="w-full rounded-none border-2 border-def bg-deep px-3 py-2 text-sm text-hi placeholder:text-faint"
+              placeholder="Group name"
+              value={newGroupName}
+              onChange={(e) => setNewGroupName(e.target.value)}
+              disabled={!!currentGroup}
+            />
+            <input
+              className="w-full rounded-none border-2 border-def bg-deep px-3 py-2 text-sm text-hi placeholder:text-faint"
+              placeholder="Slug (optional)"
+              value={newGroupSlug}
+              onChange={(e) => setNewGroupSlug(e.target.value)}
+              disabled={!!currentGroup}
+            />
+            <button
+              type="button"
+              onClick={handleCreate}
+              disabled={!!currentGroup || creatingGroup || !newGroupName.trim()}
+              className="w-full rounded-lg bg-accent px-3 py-2 text-sm font-medium text-hi disabled:opacity-50"
+            >
+              {creatingGroup ? 'Creating…' : 'Create group'}
+            </button>
           </div>
 
-          {/* Member list */}
-          {groupMembers.length > 0 && (
-            <ul className="space-y-2">
-              {groupMembers.map((m) => (
-                <li key={m.userId} className="flex items-center gap-3 border-2 border-def bg-deep px-3 py-2.5">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-input text-xs font-semibold text-lo">
-                    {m.name[0].toUpperCase()}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-hi truncate">
-                      {m.name}{m.isMe ? <span className="ml-1.5 text-xs text-faint">you</span> : null}
-                    </p>
-                    <p className="text-xs text-faint truncate">{m.email}</p>
-                  </div>
-                  <span className="shrink-0 rounded-full border border-slate-600/60 px-2 py-0.5 text-[10px] uppercase tracking-wider text-dim">
-                    {m.role}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {/* Invite helper */}
-          <div>
-            <p className="mb-2 text-xs text-dim">Invite someone — share this group code</p>
-            <div className="flex gap-2">
-              <div className="flex-1 border-2 border-def bg-deep px-3 py-2 font-mono text-sm text-lo truncate">
-                {currentGroup.slug}
-              </div>
-              <button
-                type="button"
-                onClick={copySlug}
-                className={`shrink-0 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                  copied ? 'bg-emerald-600 text-hi' : 'bg-input text-lo hover:bg-slate-600'
-                }`}
-              >
-                {copied ? 'Copied!' : 'Copy'}
-              </button>
-            </div>
+          <div className="space-y-2">
+            <p className="text-[11px] font-medium text-dim">Join existing</p>
+            <input
+              className="w-full rounded-none border-2 border-def bg-deep px-3 py-2 text-sm text-hi placeholder:text-faint"
+              placeholder="Group code / slug"
+              value={joinSlug}
+              onChange={(e) => setJoinSlug(e.target.value)}
+              disabled={!!currentGroup}
+            />
+            <button
+              type="button"
+              onClick={handleJoin}
+              disabled={!!currentGroup || joiningGroup || !joinSlug.trim()}
+              className="w-full rounded-lg bg-accent-dark px-3 py-2 text-sm font-medium text-hi disabled:opacity-50"
+            >
+              {joiningGroup ? 'Joining…' : 'Join group'}
+            </button>
+            {currentGroup && (
+              <p className="text-xs text-dim">Leave your current group to create or join another.</p>
+            )}
           </div>
         </div>
-      )}
 
-      {/* Groups list */}
-      <div className="border-2 border-def bg-card p-5">
-        <h3 className="mb-4 font-pixel text-[10px] font-semibold uppercase tracking-wider text-dim">Your groups</h3>
-        {loadingGroups ? (
-          <p className="text-sm text-dim">Loading…</p>
-        ) : groups.length === 0 ? (
-          <p className="text-sm text-dim">No groups yet. Create or join one below.</p>
-        ) : (
-          <div className="space-y-3">
-            {groups.map((group) => {
+        {/* Groups list */}
+        <div className="space-y-3">
+          {loadingGroups ? (
+            <p className="text-sm text-dim">Loading…</p>
+          ) : groups.length === 0 ? (
+            <p className="text-sm text-dim">No groups yet. Create or join one above.</p>
+          ) : (
+            groups.map((group) => {
               const isOwner = group.owner_id === user.id
+              const isActive = currentGroup?.id === group.id
               const draftName = updates[group.id] ?? group.name
+
               return (
-                <div key={group.id} className="border-2 border-def bg-deep p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
+                <div
+                  key={group.id}
+                  className={`border-2 bg-deep ${isActive ? 'border-accent/60' : 'border-def'}`}
+                >
+                  {/* Row: name + actions */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 p-4">
                     <div className="flex items-center gap-2 min-w-0">
                       <p className="text-sm font-semibold text-hi truncate">{group.name}</p>
                       <span className="shrink-0 rounded-full border border-slate-600/80 bg-page/50 px-2 py-0.5 text-[10px] uppercase tracking-wider text-dim">
@@ -346,7 +394,7 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
                       </span>
                     </div>
                     <div className="flex gap-2">
-                      {currentGroup?.id !== group.id ? (
+                      {!isActive ? (
                         <button
                           type="button"
                           onClick={() => onGroupChange && onGroupChange(group)}
@@ -355,7 +403,7 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
                           Set active
                         </button>
                       ) : (
-                        <span className="rounded-full bg-emerald-500/20 px-3 py-1.5 text-xs font-medium text-emerald-200">Active</span>
+                        <span className="rounded-full bg-emerald-500/20 px-3 py-1.5 text-xs font-medium text-success">Active</span>
                       )}
                       {isOwner ? (
                         <button
@@ -378,8 +426,10 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
                       )}
                     </div>
                   </div>
+
+                  {/* Owner: rename */}
                   {isOwner && (
-                    <div className="mt-3 flex gap-2">
+                    <div className="flex gap-2 px-4 pb-3">
                       <input
                         value={draftName}
                         onChange={(e) => setUpdates((prev) => ({ ...prev, [group.id]: e.target.value }))}
@@ -396,17 +446,58 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
                       </button>
                     </div>
                   )}
+
+                  {/* Active group: members + invite slug */}
+                  {isActive && (
+                    <div className="border-t border-def px-4 py-4 space-y-4">
+                      {groupMembers.length > 0 && (
+                        <ul className="space-y-2">
+                          {groupMembers.map((m) => (
+                            <li key={m.userId} className="flex items-center gap-3 border-2 border-def bg-card px-3 py-2.5">
+                              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-input text-xs font-semibold text-lo">
+                                {m.name[0].toUpperCase()}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium text-hi truncate">
+                                  {m.name}{m.isMe ? <span className="ml-1.5 text-xs text-faint">you</span> : null}
+                                </p>
+                                <p className="text-xs text-faint truncate">{m.email}</p>
+                              </div>
+                              <span className="shrink-0 rounded-full border border-slate-600/60 px-2 py-0.5 text-[10px] uppercase tracking-wider text-dim">
+                                {m.role}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+
+                      <div>
+                        <p className="mb-2 text-xs text-dim">Invite — share this group code</p>
+                        <div className="flex gap-2">
+                          <div className="flex-1 border-2 border-def bg-deep px-3 py-2 font-mono text-sm text-lo truncate">
+                            {group.slug}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={copySlug}
+                            className={`shrink-0 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                              copied ? 'bg-emerald-600 text-hi' : 'bg-input text-lo hover:bg-slate-600'
+                            }`}
+                          >
+                            {copied ? 'Copied!' : 'Copy'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )
-            })}
-          </div>
-        )}
+            })
+          )}
+        </div>
       </div>
 
-      {/* Create / join */}
-      <Groups currentGroup={currentGroup} supabase={supabase} user={user} onGroupChange={onGroupChange} />
-
-      {/* Data export */}
+      {/* Data */}
       <div className="border-2 border-def bg-card p-5 space-y-3">
         <h3 className="font-pixel text-[10px] font-semibold uppercase tracking-wider text-dim">Data</h3>
         <p className="text-sm text-lo">
