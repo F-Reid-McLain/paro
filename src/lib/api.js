@@ -427,7 +427,7 @@ export async function getMemberProfiles(supabase, groupId) {
 
   const { data: profiles, error: pErr } = await supabase
     .from('profiles')
-    .select('id, full_name, email')
+    .select('id, full_name, email, venmo_handle')
     .in('id', userIds)
   if (pErr) throw pErr
 
@@ -436,6 +436,7 @@ export async function getMemberProfiles(supabase, groupId) {
     map[p.id] = {
       name: p.full_name || p.email?.split('@')[0] || 'Member',
       email: p.email,
+      venmoHandle: p.venmo_handle || null,
     }
   }
   return map

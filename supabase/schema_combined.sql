@@ -10,6 +10,7 @@ create table if not exists public.profiles (
   full_name text,
   email text,
   currency text default 'USD',
+  venmo_handle text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );

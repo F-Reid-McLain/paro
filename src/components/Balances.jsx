@@ -192,11 +192,16 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
               ) : (
                 <>
                   {balanceEntries.map(([userId, netAmount]) => {
-                    const name = members[userId]?.name || 'Group member'
+                    const member = members[userId]
+                    const name = member?.name || 'Group member'
                     const youOwe = netAmount < 0
                     const absAmount = Math.abs(netAmount)
                     const isMenuOpen = openMenuId === userId
                     const isRecording = recordingFor === userId
+                    const venmoHandle = youOwe ? member?.venmoHandle : null
+                    const venmoUrl = venmoHandle
+                      ? `https://venmo.com/${venmoHandle}?txn=pay&amount=${(absAmount / 100).toFixed(2)}&note=Paro`
+                      : null
 
                     return (
                       <div key={userId} className="border-2 border-def bg-card">
@@ -207,45 +212,60 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
                               {youOwe ? `You owe $${(absAmount / 100).toFixed(2)}` : `Owes you $${(absAmount / 100).toFixed(2)}`}
                             </p>
                           </div>
-                          <div className="relative">
-                            <button
-                              type="button"
-                              onClick={() => toggleMenu(userId)}
-                              className={`flex h-8 w-8 items-center justify-center rounded-lg text-dim hover:bg-input hover:text-hi transition-colors ${isMenuOpen ? 'bg-input text-hi' : ''}`}
-                              aria-label="Options"
-                            >
-                              <DotsIcon />
-                            </button>
-                            {isMenuOpen && (
-                              <div ref={menuRef} className="absolute right-0 top-full z-50 mt-1 w-52 border-2 border-def bg-card shadow-xl">
-                                <div className="p-1.5 space-y-0.5">
-                                  <button
-                                    type="button"
-                                    onClick={() => startRecordPayment(userId, netAmount)}
-                                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-hi hover:bg-input transition-colors"
-                                  >
-                                    Record payment…
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleSettleAll(userId)}
-                                    disabled={settling === userId}
-                                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-hi hover:bg-input transition-colors disabled:opacity-60"
-                                  >
-                                    {settling === userId ? 'Settling…' : 'Settle all'}
-                                  </button>
-                                  <div className="my-1 border-t border-def" />
-                                  <button
-                                    type="button"
-                                    onClick={() => handleUnsettleAll(userId)}
-                                    disabled={unsettling === userId}
-                                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-warning hover:bg-amber-500/10 transition-colors disabled:opacity-60"
-                                  >
-                                    {unsettling === userId ? 'Undoing…' : 'Undo settlements'}
-                                  </button>
-                                </div>
-                              </div>
+                          <div className="flex items-center gap-2">
+                            {venmoUrl && (
+                              <a
+                                href={venmoUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 rounded-lg bg-[#008cff] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#0079e0] transition-colors"
+                              >
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M19.025 3C20.025 4.625 20.5 6.3 20.5 8.4c0 5.8-4.95 13.325-8.975 18.6H3L0 3.575l7.825-.75 1.575 12.675C11.025 12.975 13.55 8.525 13.55 5.8c0-1.475-.25-2.475-.65-3.3L19.025 3z"/>
+                                </svg>
+                                Venmo
+                              </a>
                             )}
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={() => toggleMenu(userId)}
+                                className={`flex h-8 w-8 items-center justify-center rounded-lg text-dim hover:bg-input hover:text-hi transition-colors ${isMenuOpen ? 'bg-input text-hi' : ''}`}
+                                aria-label="Options"
+                              >
+                                <DotsIcon />
+                              </button>
+                              {isMenuOpen && (
+                                <div ref={menuRef} className="absolute right-0 top-full z-50 mt-1 w-52 border-2 border-def bg-card shadow-xl">
+                                  <div className="p-1.5 space-y-0.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => startRecordPayment(userId, netAmount)}
+                                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-hi hover:bg-input transition-colors"
+                                    >
+                                      Record payment…
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSettleAll(userId)}
+                                      disabled={settling === userId}
+                                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-hi hover:bg-input transition-colors disabled:opacity-60"
+                                    >
+                                      {settling === userId ? 'Settling…' : 'Settle all'}
+                                    </button>
+                                    <div className="my-1 border-t border-def" />
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUnsettleAll(userId)}
+                                      disabled={unsettling === userId}
+                                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-warning hover:bg-amber-500/10 transition-colors disabled:opacity-60"
+                                    >
+                                      {unsettling === userId ? 'Undoing…' : 'Undo settlements'}
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
 

@@ -6,6 +6,8 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
   // Profile
   const [profileName, setProfileName] = useState('')
   const [savingName, setSavingName] = useState(false)
+  const [venmoHandle, setVenmoHandle] = useState('')
+  const [savingVenmo, setSavingVenmo] = useState(false)
 
   // Groups
   const [groups, setGroups] = useState([])
@@ -94,9 +96,10 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
 
   useEffect(() => {
     if (!supabase || !user?.id) return
-    supabase.from('profiles').select('full_name, email, currency').eq('id', user.id).single()
+    supabase.from('profiles').select('full_name, email, currency, venmo_handle').eq('id', user.id).single()
       .then(({ data }) => {
         if (data?.full_name) setProfileName(data.full_name)
+        if (data?.venmo_handle) setVenmoHandle(data.venmo_handle)
         if (data?.currency) {
           setCurrency(data.currency)
           localStorage.setItem('paro-currency', data.currency)
@@ -148,6 +151,22 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
       toast(e.message || 'Failed to save name')
     } finally {
       setSavingName(false)
+    }
+  }
+
+  async function handleSaveVenmo() {
+    setSavingVenmo(true)
+    try {
+      const handle = venmoHandle.trim().replace(/^@/, '')
+      const { error } = await supabase
+        .from('profiles').update({ venmo_handle: handle || null }).eq('id', user.id)
+      if (error) throw error
+      setVenmoHandle(handle)
+      toast('Venmo handle saved', 'success')
+    } catch (e) {
+      toast(e.message || 'Failed to save Venmo handle')
+    } finally {
+      setSavingVenmo(false)
     }
   }
 
@@ -311,6 +330,28 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
             className="rounded-lg bg-accent-dark px-4 py-2 text-sm font-medium text-hi disabled:opacity-50"
           >
             {savingName ? 'Saving…' : 'Save'}
+          </button>
+        </div>
+
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-dim pointer-events-none select-none">@</span>
+            <input
+              type="text"
+              placeholder="Venmo username"
+              value={venmoHandle}
+              onChange={(e) => setVenmoHandle(e.target.value.replace(/^@/, ''))}
+              onKeyDown={(e) => e.key === 'Enter' && handleSaveVenmo()}
+              className="w-full rounded-none bg-deep border-2 border-def pl-7 pr-3 py-2 text-sm text-hi placeholder:text-faint"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={handleSaveVenmo}
+            disabled={savingVenmo}
+            className="rounded-lg bg-[#008cff] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          >
+            {savingVenmo ? 'Saving…' : 'Save Venmo'}
           </button>
         </div>
 
