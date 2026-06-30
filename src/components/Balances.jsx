@@ -35,6 +35,7 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
   const [paymentNote, setPaymentNote] = useState('')
   const [savingPayment, setSavingPayment] = useState(false)
   const [settleChoiceFor, setSettleChoiceFor] = useState(null)
+  const [shareChoiceFor, setShareChoiceFor] = useState(null)
   const menuRef = useRef(null)
 
   async function load() {
@@ -176,10 +177,20 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
     }
   }
 
-  async function handleToggleShare(shareId, currentSettled) {
+  function openShareChoice(shareId, payerId) {
+    const payerVenmo = members[payerId]?.venmoHandle
+    if (payerVenmo) {
+      setShareChoiceFor(shareId)
+    } else {
+      doToggleShare(shareId, true)
+    }
+  }
+
+  async function doToggleShare(shareId, newSettled) {
+    setShareChoiceFor(null)
     setTogglingShare(shareId)
     try {
-      await setExpenseShareSettled(supabase, shareId, !currentSettled)
+      await setExpenseShareSettled(supabase, shareId, newSettled)
       await load()
       onRefresh && onRefresh()
     } catch (e) {
@@ -213,7 +224,8 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
   }
 
   const balanceEntries = Object.entries(balances).filter(([, amount]) => amount !== 0)
-  const selfShares = myShares.filter((s) => s.isSelfShare)
+  // Only shares where someone ELSE paid — these are what you genuinely owe
+  const owedShares = myShares.filter((s) => !s.isSelfShare)
 
   return (
     <section className="space-y-8">
@@ -437,42 +449,98 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
         </div>
       </div>
 
-      {/* My shares */}
-      {currentGroup && !loading && selfShares.length > 0 && (
+      {/* My shares — only expenses someone else paid and split with me */}
+      {currentGroup && !loading && owedShares.length > 0 && (
         <div>
           <h3 className="font-pixel text-sm font-semibold text-hi">My shares</h3>
-          <p className="mt-1 text-sm text-lo">Your portion on expenses you split with others.</p>
+          <p className="mt-1 text-sm text-lo">Expenses paid by others that include your share.</p>
           <ul className="mt-4 space-y-2">
-            {selfShares.map(({ shareId, shareAmount, expense, settled }) => (
-              <li key={shareId} className="flex items-center justify-between border-2 border-def bg-card px-4 py-3">
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-hi">{expense?.description || 'Expense'}</p>
-                  <p className="mt-0.5 text-xs text-dim">
-                    {expense?.date ? new Date(expense.date).toLocaleDateString() : ''} • your share
-                  </p>
-                </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <p className="text-sm font-semibold text-hi">${(shareAmount / 100).toFixed(2)}</p>
-                  {settled && (
-                    <span className="rounded-lg border border-emerald-500/30 bg-emerald-600/20 px-2 py-1 text-xs font-medium text-success">
-                      Paid
-                    </span>
+            {owedShares.map(({ shareId, shareAmount, expense, settled }) => {
+              const payerId = expense?.payer_id
+              const payerVenmo = members[payerId]?.venmoHandle
+              const payerName = members[payerId]?.name || 'them'
+              const isShowingChoice = shareChoiceFor === shareId
+              const venmoShareUrl = payerVenmo
+                ? `https://venmo.com/${payerVenmo}?txn=pay&amount=${(shareAmount / 100).toFixed(2)}&note=${encodeURIComponent(expense?.description || 'Paro')}`
+                : null
+
+              return (
+                <li key={shareId} className="border-2 border-def bg-card">
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-hi">{expense?.description || 'Expense'}</p>
+                      <p className="mt-0.5 text-xs text-dim">
+                        {expense?.date ? new Date(expense.date).toLocaleDateString() : ''}
+                        {' • paid by '}{payerName}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <p className="text-sm font-semibold text-hi">${(shareAmount / 100).toFixed(2)}</p>
+                      {settled && (
+                        <span className="rounded-lg border border-emerald-500/30 bg-emerald-600/20 px-2 py-1 text-xs font-medium text-success">
+                          Paid
+                        </span>
+                      )}
+                      {settled ? (
+                        <button
+                          type="button"
+                          onClick={() => doToggleShare(shareId, false)}
+                          disabled={togglingShare === shareId}
+                          className="rounded-lg border border-def px-3 py-1.5 text-xs font-medium text-warning hover:bg-amber-500/10 transition-colors disabled:opacity-60"
+                        >
+                          {togglingShare === shareId ? '…' : 'Undo'}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => openShareChoice(shareId, payerId)}
+                          disabled={togglingShare === shareId || isShowingChoice}
+                          className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-hi hover:bg-emerald-500 transition-colors disabled:opacity-60"
+                        >
+                          {togglingShare === shareId ? '…' : 'Mark paid'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Payment choice panel */}
+                  {isShowingChoice && venmoShareUrl && (
+                    <div className="border-t border-def bg-deep px-4 py-4 space-y-3">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-dim">
+                        How would you like to pay {payerName}?
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <a
+                          href={venmoShareUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => doToggleShare(shareId, true)}
+                          className="flex items-center justify-center gap-2 rounded-lg bg-[#008cff] px-3 py-2.5 text-sm font-semibold text-white hover:bg-[#0079e0] transition-colors"
+                        >
+                          <VenmoIcon />
+                          Pay via Venmo
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => doToggleShare(shareId, true)}
+                          disabled={togglingShare === shareId}
+                          className="rounded-lg border-2 border-def px-3 py-2.5 text-sm font-medium text-hi hover:bg-input transition-colors disabled:opacity-60"
+                        >
+                          Mark as paid
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShareChoiceFor(null)}
+                        className="text-xs text-dim hover:text-lo transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => handleToggleShare(shareId, settled)}
-                    disabled={togglingShare === shareId}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-60 ${
-                      settled
-                        ? 'border border-def text-warning hover:bg-amber-500/10'
-                        : 'bg-emerald-600 text-hi hover:bg-emerald-500'
-                    }`}
-                  >
-                    {togglingShare === shareId ? '…' : settled ? 'Undo' : 'Mark paid'}
-                  </button>
-                </div>
-              </li>
-            ))}
+                </li>
+              )
+            })}
           </ul>
         </div>
       )}
