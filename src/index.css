@@ -198,10 +198,10 @@
   --paro-bg-card:      rgb(248 253 250 / 0.92);
   --paro-bg-deep:      rgb(222 240 232 / 0.88);
   --paro-bg-input:     #dff0e8;
-  --paro-text-hi:      #0c2318;
-  --paro-text-lo:      #1a4030;
-  --paro-text-dim:     #1f5c3e;
-  --paro-text-faint:   #3d7057;
+  --paro-text-hi:      #111827;
+  --paro-text-lo:      #1f2937;
+  --paro-text-dim:     #374151;
+  --paro-text-faint:   #4b5563;
   --paro-border:       rgb(0 0 0 / 0.09);
   --paro-dot:          rgb(0 80 40 / 0.05);
   --paro-accent:       #059669;
