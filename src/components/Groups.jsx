@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getUserGroups, createGroup, joinGroup } from '../lib/api'
+import { toast } from '../lib/toast'
 
 export default function Groups({ supabase, user, currentGroup, onGroupChange }) {
   const [groups, setGroups] = useState([])
@@ -23,8 +24,8 @@ export default function Groups({ supabase, user, currentGroup, onGroupChange }) 
   useEffect(() => { load() }, [])
 
   async function handleCreate() {
-    if (currentGroup) return alert('Leave your current group before creating or joining another one.')
-    if (!name) return alert('Name required')
+    if (currentGroup) { toast('Leave your current group before creating or joining another one.'); return }
+    if (!name) { toast('Name required'); return }
     try {
       const g = await createGroup(supabase, { name, slug: slug || name.toLowerCase().replace(/\s+/g,'-'), owner_id: user.id })
       setName('')
@@ -33,13 +34,13 @@ export default function Groups({ supabase, user, currentGroup, onGroupChange }) 
       onGroupChange && onGroupChange(g)
     } catch (e) {
       console.error(e)
-      alert(e.message || 'Failed to create group')
+      toast(e.message || 'Failed to create group')
     }
   }
 
   async function handleJoin() {
-    if (currentGroup) return alert('Leave your current group before creating or joining another one.')
-    if (!joinSlug) return alert('Enter group slug to join')
+    if (currentGroup) { toast('Leave your current group before creating or joining another one.'); return }
+    if (!joinSlug) { toast('Enter a group slug to join'); return }
     try {
       const g = await joinGroup(supabase, { slug: joinSlug })
       setJoinSlug('')
@@ -47,7 +48,7 @@ export default function Groups({ supabase, user, currentGroup, onGroupChange }) 
       onGroupChange && onGroupChange(g)
     } catch (e) {
       console.error(e)
-      alert(e.message || 'Failed to join group')
+      toast(e.message || 'Failed to join group')
     }
   }
 

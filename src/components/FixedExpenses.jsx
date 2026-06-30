@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { updateFixedExpense, deleteFixedExpense } from '../lib/api'
+import { toast } from '../lib/toast'
 
 export default function FixedExpenses({ supabase, user, currentGroup, onChanged, onGroupChange }) {
   const [groupId, setGroupId] = useState('')
@@ -80,7 +81,7 @@ export default function FixedExpenses({ supabase, user, currentGroup, onChanged,
       if (onChanged) onChanged(groupId)
     } catch (e) {
       console.error('create fixed expense', e)
-      alert(e.message || 'Failed to add fixed expense')
+      toast(e.message || 'Failed to add fixed expense')
     } finally {
       setSaving(false)
     }
@@ -99,7 +100,7 @@ export default function FixedExpenses({ supabase, user, currentGroup, onChanged,
   async function handleSaveEdit(id) {
     const parsed = parseFloat(editDraft.amount)
     if (!editDraft.name.trim() || Number.isNaN(parsed) || parsed <= 0) {
-      alert('Enter a valid name and amount')
+      toast('Enter a valid name and amount')
       return
     }
     setSavingEdit(true)
@@ -115,7 +116,7 @@ export default function FixedExpenses({ supabase, user, currentGroup, onChanged,
       if (onChanged) onChanged(groupId)
     } catch (e) {
       console.error('update fixed expense', e)
-      alert(e.message || 'Failed to update')
+      toast(e.message || 'Failed to update')
     } finally {
       setSavingEdit(false)
     }
@@ -130,7 +131,7 @@ export default function FixedExpenses({ supabase, user, currentGroup, onChanged,
       if (onChanged) onChanged(groupId)
     } catch (e) {
       console.error('delete fixed expense', e)
-      alert(e.message || 'Failed to delete')
+      toast(e.message || 'Failed to delete')
     } finally {
       setDeletingId(null)
     }

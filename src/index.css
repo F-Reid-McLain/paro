@@ -21,6 +21,9 @@
   --paro-accent-dark:  #0284c7;
   --paro-accent-light: #38bdf8;
   --paro-accent-muted: #7dd3fc;
+  /* semantic status — readable on dark bg */
+  --paro-success:      #34d399;
+  --paro-warning:      #fbbf24;
 }
 
 [data-theme="forest"] {
@@ -159,6 +162,14 @@
   --paro-accent-muted: #fde68a;
 }
 
+/* Light-theme status overrides — darker variants for readability on light bg */
+[data-theme="chalk"],
+[data-theme="paper"],
+[data-theme="mint"] {
+  --paro-success: #047857;
+  --paro-warning: #b45309;
+}
+
 [data-theme="paper"] {
   --paro-bg-page:      #f5f0e8;
   --paro-bg-card:      rgb(255 252 245 / 0.92);
@@ -224,6 +235,9 @@
 @utility text-faint { color: var(--paro-text-faint); }
 
 @utility border-def { border-color: var(--paro-border); }
+
+@utility text-success { color: var(--paro-success); }
+@utility text-warning { color: var(--paro-warning); }
 
 /* ── Accent utilities ─────────────────────────── */
 @utility bg-accent       { background-color: var(--paro-accent); }

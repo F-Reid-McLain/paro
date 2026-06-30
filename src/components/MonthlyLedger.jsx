@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { fetchExpenseSharesWithMembers, setExpenseShareSettled, updateExpense } from '../lib/api'
+import { toast } from '../lib/toast'
 
 function ChevronDown() {
   return (
@@ -101,7 +102,7 @@ export default function MonthlyLedger({
       const shares = await fetchExpenseSharesWithMembers(supabase, expenseId)
       setMenuSharesCache((prev) => ({ ...prev, [expenseId]: shares }))
       onRefresh && onRefresh()
-    } catch (e) { console.error('toggle share', e); alert(e.message || 'Failed to update') }
+    } catch (e) { console.error('toggle share', e); toast(e.message || 'Failed to update') }
     finally { setTogglingShare(null) }
   }
 
@@ -118,7 +119,7 @@ export default function MonthlyLedger({
 
   async function handleSaveEdit(expenseId) {
     const parsed = parseFloat(editDraft.amount)
-    if (Number.isNaN(parsed) || parsed <= 0) { alert('Enter a valid amount'); return }
+    if (Number.isNaN(parsed) || parsed <= 0) { toast('Enter a valid amount'); return }
     setSaving(true)
     try {
       await updateExpense(supabase, expenseId, {
@@ -131,7 +132,7 @@ export default function MonthlyLedger({
       onRefresh && onRefresh()
     } catch (e) {
       console.error('update expense', e)
-      alert(e.message || 'Failed to save')
+      toast(e.message || 'Failed to save')
     } finally {
       setSaving(false)
     }
@@ -311,11 +312,11 @@ export default function MonthlyLedger({
             <div className="text-sm font-medium text-hi">${(e.amount / 100).toFixed(2)}</div>
             {myShare ? (
               myShare.settled
-                ? <div className="text-xs text-emerald-300">Settled</div>
-                : <div className="text-xs text-amber-400">You owe ${(myShare.amount / 100).toFixed(2)}</div>
+                ? <div className="text-xs text-success">Settled</div>
+                : <div className="text-xs text-warning">You owe ${(myShare.amount / 100).toFixed(2)}</div>
             ) : e.is_split && e.payer_id === user.id ? (
               shareInfo
-                ? <div className={`text-xs ${allPaid ? 'text-emerald-300' : 'text-amber-400'}`}>
+                ? <div className={`text-xs ${allPaid ? 'text-success' : 'text-warning'}`}>
                     {allPaid ? 'All paid' : `${shareInfo.paid}/${shareInfo.total} paid`}
                   </div>
                 : <div className="text-xs text-dim">You paid</div>
@@ -360,8 +361,8 @@ export default function MonthlyLedger({
                           onClick={() => handleToggleShare(share.id, share.settled, e.id)}
                           className={`shrink-0 rounded-md px-2 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${
                             share.settled
-                              ? 'bg-input text-lo hover:bg-amber-500/20 hover:text-amber-300'
-                              : 'bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600/40'
+                              ? 'bg-input text-lo hover:bg-amber-500/20 hover:text-warning'
+                              : 'bg-emerald-600/20 text-success hover:bg-emerald-600/40'
                           }`}
                         >
                           {togglingShare === share.id ? '…' : share.settled ? 'Mark unpaid' : 'Mark paid'}
@@ -377,7 +378,7 @@ export default function MonthlyLedger({
               <div className="border-b border-def p-3">
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-dim">Your share</p>
                 <div className="flex items-center justify-between">
-                  <span className={`text-sm font-medium ${myShare.settled ? 'text-emerald-300' : 'text-amber-300'}`}>
+                  <span className={`text-sm font-medium ${myShare.settled ? 'text-success' : 'text-warning'}`}>
                     {myShare.settled ? 'Settled' : `You owe $${(myShare.amount / 100).toFixed(2)}`}
                   </span>
                   <button
@@ -386,7 +387,7 @@ export default function MonthlyLedger({
                     onClick={() => handleToggleShare(myShare.id, myShare.settled, e.id)}
                     className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
                       myShare.settled
-                        ? 'bg-input text-lo hover:bg-amber-500/20 hover:text-amber-300'
+                        ? 'bg-input text-lo hover:bg-amber-500/20 hover:text-warning'
                         : 'bg-emerald-600 text-hi hover:bg-emerald-500'
                     }`}
                   >
@@ -508,7 +509,7 @@ export default function MonthlyLedger({
         <div className="mt-4 border-2 border-def bg-card p-4">
           <div className="mb-2 flex items-center justify-between">
             <p className="font-pixel text-xs font-semibold text-hi">Fixed bills</p>
-            <p className={`text-sm font-medium ${allPaid ? 'text-emerald-300' : 'text-lo'}`}>
+            <p className={`text-sm font-medium ${allPaid ? 'text-success' : 'text-lo'}`}>
               {paidCount} / {splitCount} paid
             </p>
           </div>
@@ -520,7 +521,7 @@ export default function MonthlyLedger({
               style={{ width: `${progressPct}%` }}
             />
           </div>
-          {allPaid && <p className="mt-1.5 text-xs text-emerald-400">All fixed bills paid for {formattedMonth}</p>}
+          {allPaid && <p className="mt-1.5 text-xs text-success">All fixed bills paid for {formattedMonth}</p>}
         </div>
       )}
 

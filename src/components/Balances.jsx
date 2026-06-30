@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { fetchGroupBalances, fetchMyShares, fetchSplitFixedExpenses, setExpenseShareSettled, settleUp, unsettleUp, recordPayment, recordFixedExpensePayment } from '../lib/api'
+import { toast } from '../lib/toast'
 
 function DotsIcon() {
   return (
@@ -71,7 +72,7 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
 
   async function handleRecordPayment(withUserId, youOwe) {
     const parsed = parseFloat(paymentAmount)
-    if (Number.isNaN(parsed) || parsed <= 0) { alert('Enter a valid amount'); return }
+    if (Number.isNaN(parsed) || parsed <= 0) { toast('Enter a valid amount'); return }
     setSavingPayment(true)
     try {
       await recordPayment(supabase, {
@@ -87,7 +88,7 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
       onRefresh && onRefresh()
     } catch (e) {
       console.error('record payment', e)
-      alert(e.message || 'Failed to record payment')
+      toast(e.message || 'Failed to record payment')
     } finally {
       setSavingPayment(false)
     }
@@ -104,7 +105,7 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
       onRefresh && onRefresh()
     } catch (e) {
       console.error('settle up', e)
-      alert(e.message || 'Failed to settle up')
+      toast(e.message || 'Failed to settle up')
     } finally {
       setSettling(null)
     }
@@ -121,7 +122,7 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
       onRefresh && onRefresh()
     } catch (e) {
       console.error('unsettle up', e)
-      alert(e.message || 'Failed to undo settlements')
+      toast(e.message || 'Failed to undo settlements')
     } finally {
       setUnsettling(null)
     }
@@ -135,7 +136,7 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
       onRefresh && onRefresh()
     } catch (e) {
       console.error('toggle share', e)
-      alert(e.message || 'Failed to update')
+      toast(e.message || 'Failed to update')
     } finally {
       setTogglingShare(null)
     }
@@ -154,7 +155,7 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
     } catch (e) {
       console.error('mark fixed paid', e)
       if (e.code !== '23505' && !e.message?.includes('duplicate')) {
-        alert(e.message || 'Failed to mark as paid')
+        toast(e.message || 'Failed to mark as paid')
       } else {
         await load()
       }
@@ -202,7 +203,7 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
                         <div className="flex items-center justify-between px-4 py-4">
                           <div>
                             <p className="font-medium text-hi">{name}</p>
-                            <p className={`mt-0.5 text-sm font-medium ${youOwe ? 'text-amber-400' : 'text-emerald-400'}`}>
+                            <p className={`mt-0.5 text-sm font-medium ${youOwe ? 'text-warning' : 'text-success'}`}>
                               {youOwe ? `You owe $${(absAmount / 100).toFixed(2)}` : `Owes you $${(absAmount / 100).toFixed(2)}`}
                             </p>
                           </div>
@@ -238,7 +239,7 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
                                     type="button"
                                     onClick={() => handleUnsettleAll(userId)}
                                     disabled={unsettling === userId}
-                                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-amber-400 hover:bg-amber-500/10 transition-colors disabled:opacity-60"
+                                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-warning hover:bg-amber-500/10 transition-colors disabled:opacity-60"
                                   >
                                     {unsettling === userId ? 'Undoing…' : 'Undo settlements'}
                                   </button>
@@ -307,7 +308,7 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
                       </div>
                       <div className="flex items-center gap-3">
                         {fe.paidThisPeriod ? (
-                          <span className="rounded-lg bg-emerald-600/20 border border-emerald-500/30 px-3 py-1.5 text-xs font-medium text-emerald-300">
+                          <span className="rounded-lg bg-emerald-600/20 border border-emerald-500/30 px-3 py-1.5 text-xs font-medium text-success">
                             {fe.currentPeriodLabel} paid
                           </span>
                         ) : (
@@ -347,7 +348,7 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
                 <div className="flex items-center gap-3 shrink-0">
                   <p className="text-sm font-semibold text-hi">${(shareAmount / 100).toFixed(2)}</p>
                   {settled ? (
-                    <span className="rounded-lg border border-emerald-500/30 bg-emerald-600/20 px-2 py-1 text-xs font-medium text-emerald-300">
+                    <span className="rounded-lg border border-emerald-500/30 bg-emerald-600/20 px-2 py-1 text-xs font-medium text-success">
                       Paid
                     </span>
                   ) : null}
@@ -357,7 +358,7 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
                     disabled={togglingShare === shareId}
                     className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-60 ${
                       settled
-                        ? 'border border-def text-amber-400 hover:bg-amber-500/10'
+                        ? 'border border-def text-warning hover:bg-amber-500/10'
                         : 'bg-emerald-600 text-hi hover:bg-emerald-500'
                     }`}
                   >

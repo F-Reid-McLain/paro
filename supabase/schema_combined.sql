@@ -247,6 +247,14 @@ for delete using (
   )
 );
 
+drop policy if exists "Members can update fixed expenses" on public.fixed_expenses;
+create policy "Members can update fixed expenses" on public.fixed_expenses
+for update using (
+  public.current_user_in_group(group_id) or exists (
+    select 1 from public.groups g where g.id = group_id and g.owner_id = auth.uid()
+  )
+);
+
 -- ===== payments =====
 
 create table if not exists public.payments (

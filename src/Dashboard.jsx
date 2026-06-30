@@ -5,6 +5,7 @@ import Settings from './components/Settings'
 import AddExpenseModal from './components/AddExpenseModal'
 import FloatingButton from './components/FloatingButton'
 import { fetchExpenses, getUserGroups, getMemberProfiles, deleteExpense, deleteFixedExpense, fetchSplitFixedExpenses, updateExpense, updateFixedExpense } from './lib/api'
+import { _initToast, toast } from './lib/toast'
 
 function GearIcon() {
   return (
@@ -27,6 +28,9 @@ export default function Dashboard({ user, supabase }) {
   const [editingActivityId, setEditingActivityId] = useState(null)
   const [activityDraft, setActivityDraft] = useState({})
   const [savingActivity, setSavingActivity] = useState(false)
+  const [toasts, setToasts] = useState([])
+
+  useEffect(() => { _initToast(setToasts) }, [])
 
   const totalTracked = expenses.length + fixedExpenses.length
   const totalAmount = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0) + fixedExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
@@ -79,7 +83,7 @@ export default function Dashboard({ user, supabase }) {
       loadDashboardData(currentGroup?.id)
     } catch (e) {
       console.error('delete expense', e)
-      alert(e.message || 'Failed to delete')
+      toast(e.message || 'Failed to delete')
     }
   }
 
@@ -95,7 +99,7 @@ export default function Dashboard({ user, supabase }) {
 
   async function handleSaveActivityEdit(entry) {
     const parsed = parseFloat(activityDraft.amount)
-    if (Number.isNaN(parsed) || parsed <= 0) { alert('Enter a valid amount'); return }
+    if (Number.isNaN(parsed) || parsed <= 0) { toast('Enter a valid amount'); return }
     setSavingActivity(true)
     try {
       if (entry.is_fixed) {
@@ -115,7 +119,7 @@ export default function Dashboard({ user, supabase }) {
       loadDashboardData(currentGroup?.id)
     } catch (e) {
       console.error('update activity entry', e)
-      alert(e.message || 'Failed to save')
+      toast(e.message || 'Failed to save')
     } finally {
       setSavingActivity(false)
     }
@@ -350,6 +354,22 @@ export default function Dashboard({ user, supabase }) {
 
       <AddExpenseModal open={openAdd} onClose={() => setOpenAdd(false)} supabase={supabase} user={user} currentGroup={currentGroup} onCreated={() => loadDashboardData(currentGroup?.id)} />
       {!openAdd && <FloatingButton onClick={() => setOpenAdd(true)} />}
+
+      {/* Toast notifications */}
+      <div className="fixed bottom-24 sm:bottom-6 left-0 right-0 sm:left-auto sm:right-6 z-[60] flex flex-col items-center sm:items-end gap-2 px-4 sm:px-0 pointer-events-none">
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            className={`w-full sm:w-80 border-2 bg-card px-4 py-3 text-sm font-medium text-hi shadow-xl pointer-events-auto ${
+              t.type === 'success' ? 'border-emerald-500/60' :
+              t.type === 'info' ? 'border-accent' :
+              'border-red-500/60'
+            }`}
+          >
+            {t.message}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

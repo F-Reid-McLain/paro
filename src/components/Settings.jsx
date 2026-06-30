@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Groups from './Groups'
 import { leaveGroup, deleteGroup, fetchAuditLog } from '../lib/api'
+import { toast } from '../lib/toast'
 
 export default function Settings({ supabase, user, currentGroup, onGroupChange }) {
   // Profile
@@ -96,7 +97,7 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
         .from('profiles').update({ full_name: profileName.trim() }).eq('id', user.id)
       if (error) throw error
     } catch (e) {
-      alert(e.message || 'Failed to save name')
+      toast(e.message || 'Failed to save name')
     } finally {
       setSavingName(false)
     }
@@ -133,7 +134,7 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
       a.click()
       URL.revokeObjectURL(url)
     } catch (e) {
-      alert(e.message || 'Failed to export')
+      toast(e.message || 'Failed to export')
     } finally {
       setExporting(false)
     }
@@ -154,7 +155,7 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
       setGroups((g) => g.filter((x) => x.id !== group.id))
       if (currentGroup?.id === group.id) onGroupChange && onGroupChange(null)
     } catch (e) {
-      alert(e.message || 'Failed to leave group')
+      toast(e.message || 'Failed to leave group')
     } finally {
       setActing(null)
     }
@@ -168,7 +169,7 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
       setGroups((g) => g.filter((x) => x.id !== group.id))
       if (currentGroup?.id === group.id) onGroupChange && onGroupChange(null)
     } catch (e) {
-      alert(e.message || 'Failed to delete group')
+      toast(e.message || 'Failed to delete group')
     } finally {
       setActing(null)
     }
@@ -185,7 +186,7 @@ export default function Settings({ supabase, user, currentGroup, onGroupChange }
       setUpdates((prev) => ({ ...prev, [groupId]: undefined }))
       if (currentGroup?.id === groupId) onGroupChange && onGroupChange(data)
     } catch (e) {
-      alert(e.message || 'Unable to update group name')
+      toast(e.message || 'Unable to update group name')
     }
   }
 

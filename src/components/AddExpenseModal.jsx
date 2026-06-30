@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createExpense, createFixedExpense } from '../lib/api'
+import { toast } from '../lib/toast'
 
 export default function AddExpenseModal({ open, onClose, supabase, onCreated, user, currentGroup }) {
   const [mode, setMode] = useState('expense')
@@ -80,7 +81,7 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
   async function handleSave() {
     const parsed = parseFloat(amount)
     if (Number.isNaN(parsed) || parsed <= 0) {
-      alert('Enter a valid amount greater than 0')
+      toast('Enter a valid amount greater than 0')
       return
     }
 
@@ -88,7 +89,7 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
     try {
       if (mode === 'fixed') {
         if (!name.trim()) {
-          alert('Enter a name for the fixed expense')
+          toast('Enter a name for the fixed expense')
           return
         }
         const payload = {
@@ -121,7 +122,7 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
       onClose()
     } catch (e) {
       console.error(e)
-      alert(e.message || 'Failed to save')
+      toast(e.message || 'Failed to save')
     } finally {
       setSaving(false)
     }
@@ -263,7 +264,7 @@ export default function AddExpenseModal({ open, onClose, supabase, onCreated, us
                 setGroupId(data.id)
               } catch (e) {
                 console.error('create group', e)
-                alert(e.message || 'Failed to create group')
+                toast(e.message || 'Failed to create group')
               } finally {
                 setCreatingGroup(false)
               }
