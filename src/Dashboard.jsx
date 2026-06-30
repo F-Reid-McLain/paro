@@ -218,7 +218,9 @@ export default function Dashboard({ user, supabase }) {
                   <p className="text-sm text-dim">{totalTracked} entries tracked • {fixedCount} fixed • {variableCount} variable</p>
                 </div>
                 <div className="border-2 border-def bg-deep px-4 py-3 text-right">
-                  <p className="font-pixel text-[9px] uppercase tracking-[0.15em] text-dim">Current total</p>
+                  <p className="font-pixel text-[9px] uppercase tracking-[0.15em] text-dim">
+                    {selectedMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                  </p>
                   <p className="text-xl font-semibold text-hi">${(totalAmount / 100).toFixed(2)}</p>
                 </div>
               </div>

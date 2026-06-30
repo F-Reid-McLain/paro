@@ -33,6 +33,8 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
   useEffect(() => { load() }, [currentGroup?.id])
 
   async function handleSettleUp(withUserId) {
+    const name = members[withUserId]?.name || 'this person'
+    if (!window.confirm(`Mark all expenses with ${name} as settled? This cannot be undone.`)) return
     setSettling(withUserId)
     try {
       await settleUp(supabase, { groupId: currentGroup.id, withUserId, currentUserId: user.id })
@@ -47,6 +49,7 @@ export default function Balances({ supabase, user, currentGroup, members, onRefr
   }
 
   async function handleSettleShare(shareId) {
+    if (!window.confirm('Mark your share of this expense as paid?')) return
     setSettlingShare(shareId)
     try {
       await settleExpenseShare(supabase, shareId)

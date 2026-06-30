@@ -28,6 +28,7 @@ export default function MonthlyLedger({
   const [togglingShare, setTogglingShare] = useState(null)
   const [collapsed, setCollapsed] = useState(new Set())
   const [sortMode, setSortMode] = useState('recent')
+  const [search, setSearch] = useState('')
   const [editingId, setEditingId] = useState(null)
   const [editDraft, setEditDraft] = useState({})
   const [saving, setSaving] = useState(false)
@@ -161,13 +162,18 @@ export default function MonthlyLedger({
 
   const overallTotal = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
 
+  const searchLower = search.trim().toLowerCase()
+  const filteredExpenses = searchLower
+    ? expenses.filter((e) => (e.description || '').toLowerCase().includes(searchLower))
+    : expenses
+
   // Sorted flat list (most recent first)
-  const sortedExpenses = [...expenses].sort(
+  const sortedExpenses = [...filteredExpenses].sort(
     (a, b) => new Date(b.date || b.created_at) - new Date(a.date || a.created_at)
   )
 
   // Grouped by category (sorted by highest total first)
-  const byCategory = expenses.reduce((acc, e) => {
+  const byCategory = filteredExpenses.reduce((acc, e) => {
     const cat = e.category || 'Other'
     if (!acc[cat]) acc[cat] = []
     acc[cat].push(e)
@@ -411,9 +417,33 @@ export default function MonthlyLedger({
   return (
     <section>
       {/* Header: title + sort dropdown + month nav */}
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="font-pixel text-xl font-semibold text-hi shrink-0">Ledger</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Search */}
+          <div className="relative flex-1 min-w-[140px]">
+            <svg className="absolute left-2 top-1/2 -translate-y-1/2 text-dim" width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M6.5 0a6.5 6.5 0 1 1 0 13A6.5 6.5 0 0 1 6.5 0zm0 1.5a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm7.78 10.72a.75.75 0 0 1 1.06 1.06l-3 3a.75.75 0 0 1-1.06-1.06l3-3z" />
+            </svg>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search…"
+              className="w-full rounded-lg border-2 border-def bg-input pl-6 pr-2 py-1 text-xs text-hi placeholder:text-dim focus:border-accent focus:outline-none"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-dim hover:text-hi"
+                aria-label="Clear search"
+              >
+                ×
+              </button>
+            )}
+          </div>
+
           <select
             value={sortMode}
             onChange={(e) => setSortMode(e.target.value)}
@@ -480,10 +510,17 @@ export default function MonthlyLedger({
             <p className="font-medium text-lo">Nothing here yet.</p>
             <p className="mt-1 text-sm">No expenses recorded for {formattedMonth}.</p>
           </div>
+        ) : filteredExpenses.length === 0 ? (
+          <div className="border-2 border-dashed border-def bg-deep p-6 text-center text-dim">
+            <p className="font-medium text-lo">No results for "{search}"</p>
+            <button type="button" onClick={() => setSearch('')} className="mt-2 text-sm text-accent hover:underline">Clear search</button>
+          </div>
         ) : (
           <>
             <div className="mb-4 flex items-center justify-between">
-              <div className="text-sm text-lo">{expenses.length} expense{expenses.length !== 1 ? 's' : ''}</div>
+              <div className="text-sm text-lo">
+                {filteredExpenses.length}{searchLower ? ` of ${expenses.length}` : ''} expense{filteredExpenses.length !== 1 ? 's' : ''}
+              </div>
               <div className="font-medium text-hi">Total ${(overallTotal / 100).toFixed(2)}</div>
             </div>
 
