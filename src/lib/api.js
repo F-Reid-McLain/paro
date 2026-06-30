@@ -356,6 +356,65 @@ export async function fetchMyUnsettledShares(supabase, { groupId, userId }) {
   }))
 }
 
+export async function fetchMyShares(supabase, { groupId, userId }) {
+  const { data: expenses, error: expErr } = await supabase
+    .from('expenses')
+    .select('id, description, payer_id, date, amount')
+    .eq('group_id', groupId)
+  if (expErr) throw expErr
+  if (!expenses?.length) return []
+
+  const expenseIds = expenses.map((e) => e.id)
+  const expenseMap = Object.fromEntries(expenses.map((e) => [e.id, e]))
+
+  const { data: shares, error: sharesErr } = await supabase
+    .from('expense_shares')
+    .select('id, expense_id, amount, settled')
+    .in('expense_id', expenseIds)
+    .eq('user_id', userId)
+  if (sharesErr) throw sharesErr
+
+  return (shares || []).map((share) => ({
+    shareId: share.id,
+    shareAmount: Number(share.amount),
+    settled: share.settled,
+    expense: expenseMap[share.expense_id],
+    isSelfShare: expenseMap[share.expense_id]?.payer_id === userId,
+  }))
+}
+
+export async function unsettleUp(supabase, { groupId, withUserId, currentUserId }) {
+  const { data: expenses, error } = await supabase
+    .from('expenses')
+    .select('id, payer_id')
+    .eq('group_id', groupId)
+    .in('payer_id', [withUserId, currentUserId])
+  if (error) throw error
+
+  const paidByThem = (expenses || []).filter((e) => e.payer_id === withUserId).map((e) => e.id)
+  const paidByMe = (expenses || []).filter((e) => e.payer_id === currentUserId).map((e) => e.id)
+
+  if (paidByThem.length) {
+    const { error: e1 } = await supabase
+      .from('expense_shares')
+      .update({ settled: false })
+      .in('expense_id', paidByThem)
+      .eq('user_id', currentUserId)
+      .eq('settled', true)
+    if (e1) throw e1
+  }
+
+  if (paidByMe.length) {
+    const { error: e2 } = await supabase
+      .from('expense_shares')
+      .update({ settled: false })
+      .in('expense_id', paidByMe)
+      .eq('user_id', withUserId)
+      .eq('settled', true)
+    if (e2) throw e2
+  }
+}
+
 export async function getMemberProfiles(supabase, groupId) {
   const { data: memberRows, error: mErr } = await supabase
     .from('group_members')
