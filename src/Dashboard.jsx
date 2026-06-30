@@ -295,9 +295,14 @@ export default function Dashboard({ user, supabase }) {
                             <button
                               type="button"
                               onClick={() => startActivityEdit(entry)}
-                              className="shrink-0 rounded-lg border border-def px-2 py-1 text-xs text-lo hover:bg-input hover:text-hi transition-colors"
+                              className={`shrink-0 flex h-7 w-7 items-center justify-center rounded-lg text-dim hover:bg-input hover:text-hi transition-colors`}
+                              aria-label="Edit"
                             >
-                              Edit
+                              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                <circle cx="3" cy="8" r="1.5" />
+                                <circle cx="8" cy="8" r="1.5" />
+                                <circle cx="13" cy="8" r="1.5" />
+                              </svg>
                             </button>
                           </div>
                         </div>
